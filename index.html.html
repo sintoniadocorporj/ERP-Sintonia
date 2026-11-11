@@ -1,0 +1,2305 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sintonia do Corpo - ERP v4.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Biblioteca JsBarcode para geração de código de barras -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav-btn.active { background-color: #db2777; color: white; box-shadow: 0 4px 6px -1px rgba(219, 39, 119, 0.3); border-left: 4px solid #fbcfe8; }
+        .nav-btn { border-left: 4px solid transparent; }
+        .badge { padding: 0.2rem 0.55rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 600; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; box-shadow: none !important; border: none !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row text-slate-800">
+
+    <!-- TELA DE LOGIN / BLOQUEIO DE PERFIL -->
+    <div id="modal-login" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 space-y-6 shadow-2xl text-center">
+            <div class="w-16 h-16 rounded-2xl bg-pink-600 mx-auto flex items-center justify-center font-bold text-3xl text-white shadow-lg mb-2">S</div>
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Sintonia do Corpo</h2>
+                <p class="text-sm text-slate-500 mt-1">Selecione o seu perfil de acesso</p>
+            </div>
+            
+            <div class="space-y-3 pt-4">
+                <button onclick="selecionarPerfil('loja')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl px-4 py-4 text-sm transition flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-store text-lg text-indigo-600"></i> Entrar como Vendedora (PDV)
+                </button>
+                
+                <div class="relative py-2">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                    <div class="relative flex justify-center"><span class="bg-white px-4 text-xs text-slate-400 font-semibold uppercase tracking-wider">Acesso Restrito</span></div>
+                </div>
+
+                <div id="area-senha" class="hidden space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <input type="password" id="senha-admin" placeholder="Digite a senha de Gestão" class="w-full border border-slate-300 rounded-xl px-3 py-3 text-center text-sm font-bold focus:border-pink-500 focus:ring focus:ring-pink-200 outline-none">
+                    <div class="flex gap-2">
+                        <button onclick="document.getElementById('area-senha').classList.add('hidden')" class="flex-1 bg-white border border-slate-300 text-slate-600 font-bold rounded-xl py-2 text-sm">Voltar</button>
+                        <button onclick="validarSenhaAdmin()" class="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl py-2 text-sm shadow-md">Acessar</button>
+                    </div>
+                </div>
+
+                <button id="btn-mostrar-senha" onclick="document.getElementById('area-senha').classList.remove('hidden'); document.getElementById('senha-admin').focus();" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl px-4 py-4 text-sm transition flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-lock text-lg text-pink-400"></i> Entrar como Gestão (Admin)
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Sidebar com Cadeia de Produção Organizada -->
+    <aside class="w-full md:w-64 bg-slate-900 text-white flex flex-col justify-between shrink-0 no-print">
+        <div>
+            <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-pink-600 flex items-center justify-center font-bold text-xl shadow-lg">S</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Sintonia do Corpo</h1>
+                    <p class="text-xs text-pink-400 font-medium">ERP • Fluxo Inteligente</p>
+                </div>
+            </div>
+
+            <nav class="p-4 space-y-1">
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-2">Visão Estratégica</p>
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-btn admin-only active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> 1. Painel & Resultados
+                </button>
+
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-6">Cadeia de Produção</p>
+                
+                <button onclick="switchTab('precificacao')" id="btn-precificacao" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-calculator w-5 text-center"></i> 2. Ficha de Custos
+                </button>
+
+                <button onclick="switchTab('produtos')" id="btn-produtos" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-tags w-5 text-center"></i> 3. Catálogo & Estoque
+                </button>
+
+                <button onclick="switchTab('confeccao')" id="btn-confeccao" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-scissors w-5 text-center"></i> 4. Confecção (OPs)
+                </button>
+
+                <button onclick="switchTab('transferencia')" id="btn-transferencia" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-truck-fast w-5 text-center"></i> 5. Distribuição (Lojas)
+                </button>
+
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-6">Ponta de Venda</p>
+
+                <button onclick="switchTab('vendas')" id="btn-vendas" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-cash-register w-5 text-center"></i> 6. Vendas (PDV)
+                </button>
+
+                <button onclick="switchTab('financeiro')" id="btn-financeiro" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> 7. Contas & Caixa
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-slate-800 space-y-2 admin-only">
+            <button onclick="exportBackup()" class="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg flex items-center justify-center gap-2 transition">
+                <i class="fa-solid fa-download"></i> Backup do Sistema
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-5 md:p-8 overflow-y-auto no-print">
+        
+        
+        <!-- DASHBOARD & FLUXO DE CAIXA -->
+        <section id="tab-dashboard" class="tab-content active space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Painel Geral, Fechamento & Comissões</h2>
+                    <p class="text-sm text-slate-500">Acompanhe a saúde financeira, filtre fechamentos mensais/diários e calcule comissões.</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+                    <!-- Filtro Unidade -->
+                    <select id="filtro-unidade-dash" onchange="renderAll()" class="border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold bg-white w-full sm:w-auto">
+                        <option value="todas">Todas as Unidades</option>
+                        <option value="Loja Tijuca">Loja Tijuca</option>
+                        <option value="Loja São Cristóvão">Loja São Cristóvão</option>
+                        <option value="Shopee">Shopee (Geral)</option>
+                        <option value="Nuvemshop">Nuvemshop</option>
+                    </select>
+                    <!-- Filtro Vendedora -->
+                    <select id="filtro-vendedora-dash" onchange="renderAll()" class="border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold bg-white w-full sm:w-auto text-indigo-700">
+                        <option value="todas">Todos Atendentes</option>
+                        <option value="Balcão Tijuca">Balcão Tijuca</option>
+                        <option value="Online">Online</option>
+                        <!-- As vendedoras serão preenchidas dinamicamente -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtros de Data Rápido -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center gap-3">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Período Analisado:</span>
+                <input type="date" id="dash-data-ini" onchange="renderAll()" class="border border-slate-300 rounded-lg px-2 py-1 text-sm text-slate-600">
+                <span class="text-sm text-slate-400">até</span>
+                <input type="date" id="dash-data-fim" onchange="renderAll()" class="border border-slate-300 rounded-lg px-2 py-1 text-sm text-slate-600">
+                
+                <div class="h-6 w-px bg-slate-200 mx-2 hidden sm:block"></div>
+                
+                <button onclick="setFiltroData('hoje')" class="badge bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Hoje</button>
+                <button onclick="setFiltroData('mes')" class="badge bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition font-bold">Mês Atual</button>
+                <button onclick="setFiltroData('tudo')" class="badge bg-slate-800 text-white hover:bg-slate-700 transition">Ver Tudo</button>
+            </div>
+
+            <!-- KPIs Principais (Com Filtros Aplicados) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-[11px] font-bold uppercase tracking-wider">Faturamento (Período)</span>
+                        <i class="fa-solid fa-sack-dollar text-emerald-500"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-emerald-600" id="kpi-vendas-valor">R$ 0,00</p>
+                    <p class="text-xs text-slate-500 mt-1" id="kpi-vendas-qtd">0 vendas registradas</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-[11px] font-bold uppercase tracking-wider">Lucro Bruto & Margem</span>
+                        <i class="fa-solid fa-chart-line text-blue-500"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-600" id="kpi-lucro-bruto">R$ 0,00</p>
+                    <p class="text-xs text-slate-500 mt-1" id="kpi-margem-media">Margem Média: 0%</p>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden group">
+                    <!-- Abaixo a comissão projetada (Ex: 5% padrão) -->
+                    <div class="flex items-center justify-between text-slate-400 mb-1 relative z-10">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-700">Comissão de Vendas</span>
+                        <i class="fa-solid fa-hand-holding-dollar text-indigo-500"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-indigo-600 relative z-10" id="kpi-comissao-valor">R$ 0,00</p>
+                    <p class="text-xs font-semibold text-indigo-400 mt-1 relative z-10" id="kpi-comissao-percent">1% até 25k, 1.5% acima</p>
+                    <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition">
+                        <i class="fa-solid fa-percent text-8xl text-indigo-900"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-[11px] font-bold uppercase tracking-wider">Despesas / A Pagar</span>
+                        <i class="fa-solid fa-arrow-trend-down text-rose-500"></i>
+                    </div>
+                    <p class="text-2xl font-bold text-rose-600" id="kpi-contas-pendentes">R$ 0,00</p>
+                    <p class="text-xs text-slate-500 mt-1" id="kpi-contas-pagas">Total Pago no período: R$ 0,00</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 admin-only">
+                <!-- Vendas Diárias -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2 justify-between">
+                        <span><i class="fa-solid fa-calendar-day text-emerald-600 mr-1"></i> Vendas por Dia (Período)</span>
+                        <button onclick="imprimirRelatorioMensal()" class="text-[10px] bg-slate-900 text-white px-3 py-1.5 rounded-lg uppercase tracking-wider hover:bg-slate-700 transition" title="Relatório de Vendedores p/ Comissão">Relatório de Comissão</button>
+                    </h3>
+                    <div id="resumo-diario-vendas" class="space-y-3 text-sm overflow-y-auto pr-2 flex-1">
+                        <!-- Renderizado via JS -->
+                    </div>
+                </div>
+
+                <!-- Contas a Pagar Crescente -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[400px]">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice-dollar text-rose-600 mr-1"></i> Contas a Pagar (Crescente)
+                    </h3>
+                    <div id="resumo-contas-pagar" class="space-y-3 text-sm overflow-y-auto pr-2 flex-1">
+                        <!-- Renderizado via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparativo Mensal (DRE Simplificado) -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 admin-only mt-6">
+                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-scale-balanced text-indigo-600 mr-1"></i> Comparativo de Lucro Líquido por Mês (DRE)
+                </h3>
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                                <th class="p-3">Mês / Ano</th>
+                                <th class="p-3 text-right">Faturamento Total</th>
+                                <th class="p-3 text-right">Custos (Produtos)</th>
+                                <th class="p-3 text-right">Despesas Operacionais</th>
+                                <th class="p-3 text-right font-bold text-slate-800">Resultado Líquido</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-dre-mensal" class="divide-y divide-slate-200">
+                            <!-- Renderizado via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. FICHA DE CUSTOS & PRECIFICAÇÃO -->
+        <section id="tab-precificacao" class="tab-content space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Ficha Técnica e Cálculo de Custos</h2>
+                    <p class="text-sm text-slate-500">Descubra o custo real de cada peça (tecido + aviamento + facção) para definir seu preço ideal.</p>
+                </div>
+            </div>
+
+            <!-- Calculadora de Custo -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+                    <h3 class="font-semibold text-slate-800 border-b border-slate-100 pb-2">Nova Ficha de Produto</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="text-xs font-bold text-slate-600">Nome da Peça / Modelo</label>
+                            <input type="text" id="ficha-nome" placeholder="Ex: Top Beatriz" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-medium">
+                        </div>
+                        
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3 sm:col-span-2">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase">1. Material e Tecido</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="text-xs text-slate-500">Tipo (ex: Suplex)</label>
+                                    <input type="text" id="ficha-tecido-nome" value="Suplex" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-500">Preço do Rolo (R$/m ou kg)</label>
+                                    <input type="number" step="0.01" id="ficha-tecido-preco" placeholder="Ex: 35.00" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-500">Consumo por Peça</label>
+                                    <input type="number" step="0.01" id="ficha-tecido-cons" placeholder="Ex: 0.35" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                                <div>
+                                    <label class="text-xs text-slate-500">Custo Aviamentos</label>
+                                    <input type="number" step="0.01" id="ficha-aviamento" value="0" placeholder="R$" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-500">Custo Embalagem</label>
+                                    <input type="number" step="0.01" id="ficha-embalagem" value="0" placeholder="R$" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3 sm:col-span-2">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase">2. Mão de Obra e Preço de Venda</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs text-slate-500">Custo Facção (R$ por peça)</label>
+                                    <input type="number" step="0.01" id="ficha-costura" value="0" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm text-rose-700 font-semibold bg-rose-50">
+                                </div>
+                                <div>
+                                    <label class="text-xs text-slate-500">Preço de Venda Planejado (R$)</label>
+                                    <input type="number" step="0.01" id="ficha-preco" placeholder="Ex: 69.90" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm text-emerald-700 font-bold bg-emerald-50">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-800 text-white flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg mb-6 text-pink-400">Resumo da Precificação</h3>
+                        <div class="space-y-4 text-sm mb-6">
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-400">Custo Tecido/Matéria-prima:</span>
+                                <span class="font-semibold" id="res-custo-tecido">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-400">Aviamentos e Embalagem:</span>
+                                <span class="font-semibold" id="res-custo-extra">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-700 pb-2">
+                                <span class="text-slate-400">Mão de Obra (Facção):</span>
+                                <span class="font-semibold text-rose-300" id="res-custo-mao">R$ 0,00</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-xl space-y-2 border border-slate-700">
+                            <div class="flex justify-between items-end">
+                                <span class="text-xs uppercase text-slate-400 font-bold">Custo Base</span>
+                                <span class="text-2xl font-bold text-white" id="res-custo-total">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between items-end pt-2 border-t border-slate-700">
+                                <span class="text-xs uppercase text-slate-400 font-bold">Lucro Projetado</span>
+                                <span class="text-xl font-bold text-emerald-400" id="res-lucro-proj">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-1">
+                                <span class="text-xs text-slate-400">Margem (Markup)</span>
+                                <span class="text-sm font-bold badge bg-indigo-500/20 text-indigo-300" id="res-margem-proj">0% (0x)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="salvarFicha()" class="w-full mt-6 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl px-4 py-3 text-sm transition shadow-lg shadow-pink-600/30">
+                        <i class="fa-solid fa-save mr-1"></i> Salvar Ficha Técnica
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                            <th class="p-4">Data</th>
+                            <th class="p-4">Modelo Base</th>
+                            <th class="p-4 font-bold">Custo Calculado</th>
+                            <th class="p-4 text-emerald-700 font-bold">Preço Planejado</th>
+                            <th class="p-4">Margem</th>
+                            <th class="p-4 text-right">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-fichas" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 3. CATÁLOGO, CUSTOS & ESTOQUE -->
+        <section id="tab-produtos" class="tab-content space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Catálogo e Saldo de Estoque</h2>
+                    <p class="text-sm text-slate-500">Cadastre as variações (P, M, G, Cores) e consulte o estoque em tempo real.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="text" id="filtro-busca-catalogo" onkeyup="filtrarCatalogo()" placeholder="Buscar peça por nome, cor ou SKU..." class="border border-slate-300 rounded-xl px-3 py-2 text-sm w-full md:w-72 shadow-sm">
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="font-semibold text-slate-800 mb-4" id="titulo-form-catalogo">Cadastrar Variações no Catálogo</h3>
+                <form onsubmit="addProduto(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3">
+                    <input type="text" id="prod-nome" placeholder="Modelo (ex: Top Beatriz)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm md:col-span-2 bg-slate-50">
+                    <select id="prod-tecido" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        <option value="Suplex">Tecido: Suplex</option>
+                        <option value="Kapana">Tecido: Kapana</option>
+                        <option value="Jacquard">Tecido: Jacquard</option>
+                        <option value="Canelado">Tecido: Canelado</option>
+                        <option value="Poliamida">Tecido: Poliamida</option>
+                    </select>
+                    <input type="text" id="prod-cor" placeholder="Cor (ex: Preto)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    <select id="prod-tam" class="border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-pink-700 bg-pink-50">
+                        <option value="GRADE_PMGG">★ Gerar Grade (P, M, G, GG)</option>
+                        <option value="GRADE_PMG">★ Gerar Grade (P, M, G)</option>
+                        <option value="P">Apenas P</option>
+                        <option value="M">Apenas M</option>
+                        <option value="G">Apenas G</option>
+                        <option value="GG">Apenas GG</option>
+                        <option value="Único">Único</option>
+                    </select>
+                    <input type="number" step="0.01" id="prod-custo" placeholder="Custo Ficha (R$)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    <input type="number" step="0.01" id="prod-preco" placeholder="Preço (R$)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    
+                    <button type="submit" class="md:col-span-7 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition">
+                        + Registrar Grade no Sistema
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-[10px] uppercase tracking-wider">
+                            <th class="p-3">Peça / SKU</th>
+                            <th class="p-3">Cor / Tam</th>
+                            <th class="p-3 th-custo" id="th-preco-dinamico">Custo / Preço</th>
+                            <th class="p-3 th-lucro">Lucro R$</th>
+                            <th class="p-3 text-center bg-amber-50/60 text-amber-800 th-fabrica">Fábrica</th>
+                            <th class="p-3 text-center bg-blue-50/60 text-blue-800">Tijuca</th>
+                            <th class="p-3 text-center bg-purple-50/60 text-purple-800">S. Crist.</th>
+                            <th class="p-3 text-center bg-orange-50/60 text-orange-800">Shopee</th>
+                            <th class="p-3 text-center font-bold">Total</th>
+                            <th class="p-3 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-produtos" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 4. CONFECÇÃO (OPs) -->
+        <section id="tab-confeccao" class="tab-content space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Ordens de Produção (Fábrica)</h2>
+                <p class="text-sm text-slate-500">Mande cortar e costurar as peças. Ao finalizar, elas caem no estoque da Confecção.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <form onsubmit="addOP(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                    <select id="op-produto" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm md:col-span-2"></select>
+                    <input type="number" id="op-qtd" placeholder="Qtd a Cortar (pçs)" min="1" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    <input type="text" id="op-obs" placeholder="Costureira / Facção" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl px-4 py-2 text-sm transition">
+                        Iniciar Produção
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                            <th class="p-4">Nº OP</th>
+                            <th class="p-4">Data Abertura</th>
+                            <th class="p-4">Produto da Grade</th>
+                            <th class="p-4 font-bold">Qtd Lote</th>
+                            <th class="p-4">Facção</th>
+                            <th class="p-4">Andamento</th>
+                            <th class="p-4 text-right">Controles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-ops" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 5. ROMANEIO / DISTRIBUIÇÃO -->
+        <section id="tab-transferencia" class="tab-content space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Distribuição (Romaneios)</h2>
+                <p class="text-sm text-slate-500">Transfira peças da Fábrica para as lojas físicas ou para o estoque dedicado da Shopee.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Seleção -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="font-semibold text-slate-800">Incluir Peça no Lote</h3>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Destino do Romaneio</label>
+                        <select id="rom-destino" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-indigo-700 bg-indigo-50">
+                            <option value="Loja Tijuca">Loja Tijuca</option>
+                            <option value="Loja São Cristóvão">Loja São Cristóvão</option>
+                            <option value="Estoque Shopee">Estoque Shopee (E-commerce)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Buscar Peça (Fábrica)</label>
+                        <input type="text" id="rom-produto-busca" list="rom-produtos-list" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm" placeholder="Digite para buscar..." autocomplete="off">
+                        <datalist id="rom-produtos-list"></datalist>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Quantidade</label>
+                        <input type="number" id="rom-qtd" value="1" min="1" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <button type="button" onclick="addItemRomaneio()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition">
+                        + Adicionar à Sacola
+                    </button>
+                </div>
+
+                <!-- Lista Atual -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-slate-800">Conferência da Sacola de Envio</h3>
+                            <span id="rom-resumo-pecas" class="badge bg-indigo-100 text-indigo-800">0 peças</span>
+                        </div>
+                        <div class="overflow-x-auto border border-slate-200 rounded-xl mb-4">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
+                                        <th class="p-3">SKU</th>
+                                        <th class="p-3">Peça</th>
+                                        <th class="p-3 text-center">Qtd</th>
+                                        <th class="p-3 text-right">Remover</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-carrinho-romaneio" class="divide-y divide-slate-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3 justify-end">
+                        <button type="button" onclick="limparCarrinhoRomaneio()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 text-sm font-medium hover:bg-slate-50">Limpar</button>
+                        <button type="button" onclick="finalizarRomaneio()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl px-6 py-2.5 text-sm transition">
+                            <i class="fa-solid fa-truck-ramp-box mr-1"></i> Despachar e Gerar PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico Romaneios -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                            <th class="p-4">Nº Romaneio</th>
+                            <th class="p-4">Data Emissão</th>
+                            <th class="p-4">Destino</th>
+                            <th class="p-4">Conteúdo</th>
+                            <th class="p-4 text-center">Total Peças</th>
+                            <th class="p-4 text-right">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-transferencias" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 6. VENDAS E PDV -->
+        <section id="tab-vendas" class="tab-content space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">PDV de Vendas (Com Busca Rápida)</h2>
+                <p class="text-sm text-slate-500">Registre as vendas e dê baixa automática na loja física ou estoque online.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Adicionar Item -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <h3 class="font-semibold text-slate-800">Adicionar à Venda</h3>
+                    
+                    <div class="border-2 border-indigo-100 bg-indigo-50/50 p-4 rounded-xl space-y-2 mb-2">
+                        <label class="text-xs font-bold text-indigo-700 flex items-center gap-1.5 uppercase tracking-wider"><i class="fa-solid fa-barcode"></i> Bipe o Código de Barras (Leitor Ótico)</label>
+                        <input type="text" id="pdv-barcode-scanner" onkeypress="handleBarcodeScan(event)" class="w-full border border-indigo-300 bg-white rounded-xl px-3 py-2.5 text-sm font-bold focus:border-indigo-600 focus:ring focus:ring-indigo-200 outline-none placeholder-indigo-300 shadow-inner" placeholder="Passe o leitor aqui ou digite o SKU + Enter..." autocomplete="off">
+                    </div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="h-px bg-slate-200 flex-1"></div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Ou adicione manualmente</span>
+                        <div class="h-px bg-slate-200 flex-1"></div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Local da Venda (De onde a peça sai?)</label>
+                        <select id="pdv-canal" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-emerald-700 bg-emerald-50">
+                            <option value="Loja Tijuca">Loja Tijuca (Física)</option>
+                            <option value="Loja São Cristóvão">Loja São Cristóvão (Física)</option>
+                            <option value="Shopee">Shopee (Sai da Tijuca)</option>
+                            <option value="Shopee SC">Shopee (Sai de São Cristóvão)</option>
+                            <option value="Estoque Shopee">Shopee (Estoque Próprio E-commerce)</option>
+                            <option value="Nuvemshop">Nuvemshop (Sai da Tijuca)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Buscar Peça (Digite nome ou cor)</label>
+                        <input type="text" id="pdv-produto-busca" list="pdv-produtos-list" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm" placeholder="Digite para buscar..." autocomplete="off">
+                        <datalist id="pdv-produtos-list"></datalist>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-500">Quantidade</label>
+                            <input type="number" id="pdv-qtd" value="1" min="1" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="button" onclick="addItemPDV()" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl px-4 py-2 text-sm transition">
+                                + Carrinho
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carrinho PDV -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-slate-800">Itens do Cliente</h3>
+                            <span id="pdv-resumo-itens" class="badge bg-slate-100 text-slate-700">0 peças</span>
+                        </div>
+                        <div class="overflow-x-auto border border-slate-200 rounded-xl mb-4">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
+                                        <th class="p-3">Peça</th>
+                                        <th class="p-3 text-center">Qtd</th>
+                                        <th class="p-3">Val. Un.</th>
+                                        <th class="p-3">Subtotal</th>
+                                        <th class="p-3 text-right"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-carrinho-pdv" class="divide-y divide-slate-200"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-500">Desconto em Reais</label>
+                                <input type="number" step="0.01" id="pdv-desconto" value="0" min="0" oninput="renderCarrinhoPDV()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-500">Pagamento</label>
+                                <select id="pdv-pgto" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white">
+                                    <option value="PIX">PIX (Dinheiro na Hora)</option>
+                                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                    <option value="Cartão de Débito">Cartão de Débito</option>
+                                    <option value="Dinheiro">Espécie</option>
+                                    <option value="Repasse Plataforma">Repasse Shopee/Nuvem</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-500">Atendente / Cliente</label>
+                                <input type="text" id="pdv-vendedora" placeholder="Ex: Ana" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-slate-200 gap-3">
+                            <div>
+                                <span class="text-xs text-slate-500 block">A Cobrar do Cliente:</span>
+                                <span id="pdv-total-final" class="text-2xl font-bold text-emerald-600">R$ 0,00</span>
+                                <span id="pdv-lucro-previsto" class="text-xs text-blue-600 font-semibold ml-2 text-opacity-50"></span>
+                            </div>
+                            <button type="button" onclick="finalizarVendaPDV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-6 py-3 text-sm transition shadow-sm">
+                                <i class="fa-solid fa-check mr-1"></i> Receber e Fechar Venda
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                            <th class="p-4">Recibo / Data</th>
+                            <th class="p-4">Local / Atendente</th>
+                            <th class="p-4">Resumo do Pedido</th>
+                            <th class="p-4">Via de Pgto</th>
+                            <th class="p-4">Custo</th>
+                            <th class="p-4 text-emerald-700 font-bold">Valor Pago</th>
+                            <th class="p-4">Lucro Bruto</th>
+                            <th class="p-4 text-right">Opções</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-vendas" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 7. FINANCEIRO / CONTAS -->
+        <section id="tab-financeiro" class="tab-content space-y-6">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Contas a Pagar e Despesas Operacionais</h2>
+                <p class="text-sm text-slate-500">Mantenha os pagamentos em dia (tecidos, aluguel, facção) para ter o cálculo correto do saldo de caixa no Painel.</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <form onsubmit="addConta(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
+                    <input type="text" id="conta-desc" placeholder="Qual a despesa? (ex: Aluguel Loja)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm md:col-span-2">
+                    <select id="conta-cat" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        <option value="Matéria-Prima / Tecidos">Matéria-Prima / Tecidos</option>
+                        <option value="Mão de Obra / Facção">Mão de Obra / Facção</option>
+                        <option value="Aluguel / Condomínio">Aluguel / Condomínio</option>
+                        <option value="Impostos / Taxas">Impostos / Taxas</option>
+                        <option value="Marketing / Embalagens">Marketing / Embalagens</option>
+                    </select>
+                    <select id="conta-unidade" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        <option value="Confecção">Centro: Confecção</option>
+                        <option value="Loja Tijuca">Centro: Loja Tijuca</option>
+                        <option value="Loja São Cristóvão">Centro: Loja São Cristóvão</option>
+                        <option value="Geral / E-commerce">Centro: Geral / Online</option>
+                    </select>
+                    <input type="date" id="conta-venc" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-500">
+                    <input type="number" step="0.01" id="conta-valor" placeholder="Valor (R$)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                    <button type="submit" class="md:col-span-6 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition">
+                        Lançar Boleto / Despesa
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600">
+                            <th class="p-4">Vencimento</th>
+                            <th class="p-4">Descrição da Conta</th>
+                            <th class="p-4">Categoria da Despesa</th>
+                            <th class="p-4">Centro Responsável</th>
+                            <th class="p-4 font-bold text-rose-700">Valor R$</th>
+                            <th class="p-4">Situação</th>
+                            <th class="p-4 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-contas" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE EDIÇÃO DE PRODUTO -->
+    <div id="modal-editar-prod" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 class="font-bold text-lg text-slate-900">Editar Catálogo & Estoque</h3>
+            <input type="hidden" id="edit-prod-id">
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="text-xs font-semibold text-slate-500">Modelo</label>
+                    <input type="text" id="edit-prod-nome" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Cor</label>
+                        <input type="text" id="edit-prod-cor" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Tamanho</label>
+                        <input type="text" id="edit-prod-tam" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Custo (R$)</label>
+                        <input type="number" step="0.01" id="edit-prod-custo" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Venda (R$)</label>
+                        <input type="number" step="0.01" id="edit-prod-preco" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+                
+                <div class="border-t border-slate-200 mt-2 pt-3">
+                    <label class="text-xs font-bold text-slate-700 block mb-2">Ajuste Direto de Quantidades</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <div>
+                            <label class="text-[10px] font-semibold text-amber-700 uppercase">Fábrica</label>
+                            <input type="number" id="edit-prod-fab" min="0" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-center text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-blue-700 uppercase">Tijuca</label>
+                            <input type="number" id="edit-prod-tij" min="0" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-center text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-purple-700 uppercase">S. Crist.</label>
+                            <input type="number" id="edit-prod-sc" min="0" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-center text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-semibold text-orange-700 uppercase">Shopee</label>
+                            <input type="number" id="edit-prod-shp" min="0" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-center text-xs font-bold">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-3 mt-2">
+                <button onclick="fecharModalEditarProd()" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-medium">Cancelar</button>
+                <button onclick="salvarEdicaoProd()" class="px-5 py-2 rounded-xl bg-pink-600 text-white font-bold text-sm">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- MODAL QUANTIDADE DE ETIQUETAS -->
+    <div id="modal-qtd-etiquetas" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-[60] no-print">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
+            <h3 class="font-bold text-lg text-slate-900">Imprimir Etiquetas</h3>
+            <input type="hidden" id="etiqueta-prod-id">
+            <p class="text-sm text-slate-500">O sistema sugere a quantidade de peças prontas na Fábrica. Altere caso queira preencher uma folha A4.</p>
+            <div>
+                <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Quantidade a Imprimir</label>
+                <input type="number" id="etiqueta-qtd" min="1" value="1" class="w-full mt-1 border-2 border-indigo-200 focus:border-indigo-500 rounded-xl px-3 py-3 text-center text-xl font-bold bg-indigo-50 outline-none">
+            </div>
+            <div class="flex justify-end gap-2 pt-3">
+                <button onclick="fecharModalQtdEtiquetas()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium">Cancelar</button>
+                <button onclick="confirmarImpressaoEtiquetas()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition"><i class="fa-solid fa-barcode mr-1"></i> Gerar Etiquetas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE IMPRESSÃO / RECIBO / ROMANEIO COM CÓDIGO DE BARRAS -->
+    <div id="modal-impressao" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <div id="print-area" class="p-4 border border-slate-200 rounded-xl space-y-3 text-sm flex flex-col items-center">
+                <!-- O conteúdo gerado pelas funções (recibo, etiquetas, romaneios) será injetado aqui -->
+            </div>
+            <div class="flex justify-between gap-2 pt-2 no-print">
+                <button id="btn-copiar-whatsapp" onclick="copiarTextoModal()" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs flex items-center gap-1.5 hidden">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Copiar
+                </button>
+                <div class="flex gap-2 w-full justify-end">
+                    <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-print"></i> Imprimir
+                    </button>
+                    <button onclick="fecharModalImpressao()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        // ================= SISTEMA DE PERFIS (LOGIN) =================
+        window.perfilAtual = 'admin'; // Padrão antes do login
+
+        function selecionarPerfil(perfil) {
+            if (perfil === 'loja') {
+                window.perfilAtual = 'loja';
+                document.getElementById('modal-login').style.display = 'none';
+                
+                // Aplica CSS Dinâmico para esconder elementos de admin
+                const style = document.createElement('style');
+                style.innerHTML = `
+                    .admin-only { display: none !important; }
+                    .th-lucro { display: none !important; }
+                    .th-fabrica { display: none !important; }
+                `;
+                document.head.appendChild(style);
+                
+                // Altera o título da coluna
+                document.getElementById('th-preco-dinamico').innerText = 'Preço Final';
+
+                // Força a aba de Vendas como tela inicial da vendedora
+                switchTab('vendas');
+            }
+        }
+
+        function validarSenhaAdmin() {
+            const senha = document.getElementById('senha-admin').value;
+            // Senha simples para o arquivo local
+            if (senha === "sintonia2026" || senha === "admin") {
+                window.perfilAtual = 'admin';
+                document.getElementById('modal-login').style.display = 'none';
+                switchTab('dashboard'); // Admin vai pro painel
+            } else {
+                alert("Senha incorreta!");
+                document.getElementById('senha-admin').value = "";
+            }
+        }
+
+        // Permitir enter na senha
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputSenha = document.getElementById('senha-admin');
+            if(inputSenha) {
+                inputSenha.addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') validarSenhaAdmin();
+                });
+            }
+        });
+
+        // ================= FUNÇÕES DE CÓDIGO DE BARRAS E ETIQUETAS =================
+        function abrirModalQtdEtiquetas(id) {
+            const p = db.produtos.find(x => x.id === id);
+            if (!p) return;
+            document.getElementById('etiqueta-prod-id').value = p.id;
+            document.getElementById('etiqueta-qtd').value = p.estConfeccao > 0 ? p.estConfeccao : 1;
+            document.getElementById('modal-qtd-etiquetas').classList.remove('hidden');
+            document.getElementById('modal-qtd-etiquetas').classList.add('flex');
+            setTimeout(() => document.getElementById('etiqueta-qtd').focus(), 100);
+        }
+
+        function fecharModalQtdEtiquetas() {
+            document.getElementById('modal-qtd-etiquetas').classList.add('hidden');
+            document.getElementById('modal-qtd-etiquetas').classList.remove('flex');
+        }
+
+        function confirmarImpressaoEtiquetas() {
+            const id = parseInt(document.getElementById('etiqueta-prod-id').value);
+            const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1;
+            fecharModalQtdEtiquetas();
+            gerarEtiquetasMultiplas(id, qtd);
+        }
+
+        function gerarEtiquetasMultiplas(id, qtd) {
+            const p = db.produtos.find(x => x.id === id);
+            if (!p) return;
+            
+            // Layout Pimaco 65 etiquetas (5 colunas x 13 linhas)
+            // Largura: 38.2mm | Altura: 21.2mm
+            let html = `
+            <style>
+                @media print {
+                    @page { margin: 10.7mm 4.7mm; size: A4; }
+                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+                .pimaco-container {
+                    display: grid;
+                    grid-template-columns: repeat(5, 38.2mm);
+                    grid-auto-rows: 21.2mm;
+                    column-gap: 2.5mm; /* Espaçamento horizontal padrão Pimaco */
+                    row-gap: 0mm;
+                    justify-content: center;
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                .etiqueta-pimaco {
+                    width: 38.2mm;
+                    height: 21.2mm;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    background: white;
+                    overflow: hidden;
+                    box-sizing: border-box;
+                    padding: 1mm;
+                    /* border: 1px dashed #ccc; /* Apenas para visualização em tela, pode remover na impressão */
+                }
+                .etq-title { font-size: 5pt; font-weight: bold; text-transform: uppercase; line-height: 1; margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+                .etq-nome { font-size: 5pt; font-weight: 600; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; text-align: center; }
+                .etq-desc { font-size: 4.5pt; color: #333; line-height: 1; margin-bottom: 1px; }
+                .etq-svg-container { display: flex; justify-content: center; width: 100%; height: 8mm; overflow: hidden; margin: 0; padding: 0; }
+                .etq-svg-container svg { height: 100%; width: auto; max-width: 100%; }
+                .etq-preco { font-size: 6pt; font-weight: 900; line-height: 1; margin-top: 1px; }
+            </style>
+            <div class="pimaco-container pt-4">`;
+            
+            for(let i = 0; i < qtd; i++) {
+                html += `
+                <div class="etiqueta-pimaco" style="break-inside: avoid;">
+                    <div class="etq-title">SINTONIA</div>
+                    <div class="etq-nome">${p.nome}</div>
+                    <div class="etq-desc">${p.cor.substring(0,8)} - Tam: <span style="font-weight:bold">${p.tam}</span></div>
+                    <div class="etq-svg-container">
+                        <svg id="barcode-svg-${i}"></svg>
+                    </div>
+                    <div class="etq-preco">${formatBRL(p.preco)}</div>
+                </div>
+                `;
+            }
+            html += '</div>';
+            document.getElementById('print-area').innerHTML = html;
+            
+            for(let i = 0; i < qtd; i++) {
+                JsBarcode(`#barcode-svg-${i}`, p.sku, {
+                    format: "CODE128", 
+                    lineColor: "#000", 
+                    width: 1.0, 
+                    height: 20,
+                    displayValue: true, 
+                    fontSize: 6, 
+                    margin: 0, 
+                    textMargin: 0
+                });
+            }
+            
+            const btnWpp = document.getElementById('btn-copiar-whatsapp');
+            if(btnWpp) btnWpp.classList.add('hidden');
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        function imprimirRelatorioDiario(dataStr) {
+            const vendasDoDia = db.vendas.filter(v => v.data === dataStr);
+            if (vendasDoDia.length === 0) return;
+
+            let totalValor = 0;
+            let totalPecas = 0;
+            const itensAgrupados = {};
+
+            vendasDoDia.forEach(v => {
+                // Se houver desconto na venda, rateamos ou apenas mostramos o valor final cobrado.
+                // Como queremos a análise real dos itens, usaremos os itens, mas também vamos somar eventuais descontos.
+                let descontoVenda = v.desconto || 0;
+                
+                (v.itens || []).forEach(item => {
+                    totalPecas += item.qtd;
+                    const chave = `${item.sku}_${v.canal}`;
+                    if (!itensAgrupados[chave]) {
+                        itensAgrupados[chave] = {
+                            nome: item.nome,
+                            sku: item.sku,
+                            qtd: 0,
+                            canal: v.canal,
+                            subtotal: 0
+                        };
+                    }
+                    itensAgrupados[chave].qtd += item.qtd;
+                    itensAgrupados[chave].subtotal += (item.preco * item.qtd);
+                });
+                totalValor += v.valor; // Valor final pago já com desconto
+            });
+
+            let trHtml = "";
+            Object.values(itensAgrupados).forEach(item => {
+                trHtml += `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-2 text-xs font-bold">${item.nome} <br><span class="text-[9px] text-slate-400 font-normal">${item.sku}</span></td>
+                        <td class="py-2 text-center text-xs badge bg-slate-100">${item.canal}</td>
+                        <td class="py-2 text-center font-bold">${item.qtd}</td>
+                        <td class="py-2 text-right font-bold text-slate-800">${formatBRL(item.subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const htmlContent = `
+                <div class="w-full">
+                    <div class="text-center border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase">Relatório de Vendas Diário</h2>
+                        <p class="text-sm font-semibold">Sintonia do Corpo</p>
+                        <p class="text-xs text-slate-500">Data de Referência: <strong class="text-indigo-700">${dataStr}</strong></p>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800">
+                                <th class="py-2">Produto</th>
+                                <th class="py-2 text-center">Local</th>
+                                <th class="py-2 text-center">Qtd</th>
+                                <th class="py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trHtml || '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum item detalhado.</td></tr>'}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800">
+                            <tr>
+                                <td class="py-3 uppercase text-right" colspan="2">Faturamento Consolidado do Dia:</td>
+                                <td class="py-3 text-center">${totalPecas} pçs</td>
+                                <td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(totalValor)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-8 text-center text-xs text-slate-400">
+                        ______________________________________________<br>
+                        Relatório Analítico de Vendas
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('print-area').innerHTML = htmlContent;
+            
+            let texto = `*RELATÓRIO DE VENDAS - ${dataStr}*\n\n`;
+            Object.values(itensAgrupados).forEach(i => {
+                texto += `- ${i.qtd}x ${i.nome} (${i.canal}): ${formatBRL(i.subtotal)}\n`;
+            });
+            texto += `\n*TOTAL VENDIDO: ${formatBRL(totalValor)} (${totalPecas} peças)*`;
+            textoCompartilhamento = texto;
+
+            const btnWpp = document.getElementById('btn-copiar-whatsapp');
+            if(btnWpp) btnWpp.classList.remove('hidden');
+            
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        function handleBarcodeScan(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const skuDigitado = e.target.value.trim().toUpperCase();
+                e.target.value = '';
+                if (!skuDigitado) return;
+                
+                const p = db.produtos.find(x => x.sku.toUpperCase() === skuDigitado);
+                if (!p) { alert("Produto não encontrado no sistema com o código: " + skuDigitado); return; }
+                
+                const canal = document.getElementById('pdv-canal').value; 
+                let saldo = 0; let nomeEst = "";
+                if (canal === "Loja Tijuca" || canal === "Shopee" || canal === "Nuvemshop") { saldo = p.estTijuca; nomeEst = "Tijuca"; }
+                else if (canal === "Loja São Cristóvão" || canal === "Shopee SC") { saldo = p.estSaoCristovao; nomeEst = "São Cristóvão"; }
+                else if (canal === "Estoque Shopee") { saldo = p.estShopee; nomeEst = "Shopee"; }
+
+                const itemExist = carrinhoPDV.find(i => i.prodId === p.id); 
+                const totReq = (itemExist ? itemExist.qtd : 0) + 1; 
+                
+                if (saldo < totReq) { alert(`Estoque INSUFICIENTE na loja ${nomeEst}! (Tentou add ${totReq}, saldo é ${saldo})`); return; } 
+                
+                if (itemExist) itemExist.qtd += 1; 
+                else carrinhoPDV.push({ prodId: p.id, sku: p.sku, nome: `${p.nome} (${p.cor} - ${p.tam})`, qtd: 1, preco: p.preco, custo: p.custo || 0 }); 
+                renderCarrinhoPDV(); 
+            }
+        }
+        
+        // Ajuste no verRomaneio e verReciboVenda para mostrar/esconder o whatsapp
+        const oldVerRomaneio = verRomaneioImpressao;
+        verRomaneioImpressao = function(id) {
+            oldVerRomaneio(id);
+            document.getElementById('btn-copiar-whatsapp').classList.remove('hidden');
+        }
+        
+        const oldVerRecibo = verReciboVenda;
+        verReciboVenda = function(id) {
+            oldVerRecibo(id);
+            document.getElementById('btn-copiar-whatsapp').classList.remove('hidden');
+        }
+
+
+        // ================= FUNÇÕES DE FILTRO E RELATÓRIO MENSAL =================
+        function padZero(n) { return (n < 10 ? '0' : '') + n; }
+        
+        function getFiltroDatas() {
+            const di = document.getElementById('dash-data-ini').value;
+            const df = document.getElementById('dash-data-fim').value;
+            return {
+                inicio: di ? new Date(di + "T00:00:00") : null,
+                fim: df ? new Date(df + "T23:59:59") : null
+            };
+        }
+
+        function setFiltroData(tipo) {
+            const hoje = new Date();
+            const dIni = document.getElementById('dash-data-ini');
+            const dFim = document.getElementById('dash-data-fim');
+            
+            if (tipo === 'hoje') {
+                const str = `${hoje.getFullYear()}-${padZero(hoje.getMonth()+1)}-${padZero(hoje.getDate())}`;
+                dIni.value = str; dFim.value = str;
+            } else if (tipo === 'mes') {
+                const priDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                const ultDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+                dIni.value = `${priDia.getFullYear()}-${padZero(priDia.getMonth()+1)}-${padZero(priDia.getDate())}`;
+                dFim.value = `${ultDia.getFullYear()}-${padZero(ultDia.getMonth()+1)}-${padZero(ultDia.getDate())}`;
+            } else if (tipo === 'tudo') {
+                dIni.value = ''; dFim.value = '';
+            }
+            renderAll();
+        }
+
+        function parseBrDate(str) {
+            // Data BR: "DD/MM/YYYY" -> Date obj
+            if(!str) return new Date(0);
+            const p = str.split('/');
+            if(p.length === 3) return new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`);
+            // Fallback for dash dates
+            return new Date(str);
+        }
+
+        function popularSelectVendedoras() {
+            const select = document.getElementById('filtro-vendedora-dash');
+            const valAtual = select.value;
+            // Coletar nomes únicos
+            const vendedoras = new Set();
+            db.vendas.forEach(v => {
+                if (v.vendedora) vendedoras.add(v.vendedora.trim());
+            });
+            
+            let htmlSelect = `<option value="todas">Todos Atendentes</option>`;
+            [...vendedoras].sort().forEach(nome => {
+                htmlSelect += `<option value="${nome}">${nome}</option>`;
+            });
+            
+            select.innerHTML = htmlSelect;
+            // Tenta manter selecionado se existir
+            if(Array.from(select.options).some(o => o.value === valAtual)) {
+                select.value = valAtual;
+            }
+        }
+
+        function imprimirRelatorioMensal() {
+            const filtroUnid = document.getElementById('filtro-unidade-dash').value;
+            const dates = getFiltroDatas();
+            let periodoStr = "Todo o período";
+            if (dates.inicio && dates.fim) {
+                periodoStr = `De ${dates.inicio.toLocaleDateString('pt-BR')} até ${dates.fim.toLocaleDateString('pt-BR')}`;
+            } else if (dates.inicio) {
+                periodoStr = `A partir de ${dates.inicio.toLocaleDateString('pt-BR')}`;
+            } else if (dates.fim) {
+                periodoStr = `Até ${dates.fim.toLocaleDateString('pt-BR')}`;
+            }
+
+            // Filtrar as vendas
+            let vendasFiltradas = db.vendas;
+            if (filtroUnid !== "todas") {
+                vendasFiltradas = vendasFiltradas.filter(v => v.canal.includes(filtroUnid));
+            }
+            if (dates.inicio) vendasFiltradas = vendasFiltradas.filter(v => parseBrDate(v.data) >= dates.inicio);
+            if (dates.fim) vendasFiltradas = vendasFiltradas.filter(v => parseBrDate(v.data) <= dates.fim);
+
+            // Agrupar por vendedora
+            const resumoVend = {};
+            vendasFiltradas.forEach(v => {
+                const vend = v.vendedora || "Sem Atendente";
+                if (!resumoVend[vend]) resumoVend[vend] = { totalVend: 0, qtdPecas: 0, numVendas: 0 };
+                resumoVend[vend].totalVend += v.valor;
+                resumoVend[vend].numVendas += 1;
+                resumoVend[vend].qtdPecas += (v.itens || []).reduce((acc, i) => acc + i.qtd, 0);
+            });
+
+            // Gerar Tabela HTML
+            let trHtml = "";
+            let grandTotal = 0; let grandPecas = 0; let grandComissao = 0;
+            
+            Object.keys(resumoVend).sort((a,b) => resumoVend[b].totalVend - resumoVend[a].totalVend).forEach(nome => {
+                const d = resumoVend[nome];
+                
+                let comissao = 0;
+                if (d.totalVend <= 25000) {
+                    comissao = d.totalVend * 0.01;
+                } else {
+                    comissao = (25000 * 0.01) + ((d.totalVend - 25000) * 0.015);
+                }
+
+                grandTotal += d.totalVend;
+                grandPecas += d.qtdPecas;
+                grandComissao += comissao;
+
+                trHtml += `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-2 font-bold">${nome}</td>
+                        <td class="py-2 text-center">${d.numVendas}</td>
+                        <td class="py-2 text-center">${d.qtdPecas}</td>
+                        <td class="py-2 text-right font-bold text-slate-800">${formatBRL(d.totalVend)}</td>
+                        <td class="py-2 text-right font-bold text-indigo-700">${formatBRL(comissao)}</td>
+                    </tr>
+                `;
+            });
+
+            const htmlContent = `
+                <div class="w-full">
+                    <div class="text-center border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase">Relatório de Fechamento & Comissão</h2>
+                        <p class="text-sm font-semibold">Sintonia do Corpo</p>
+                        <p class="text-xs text-slate-500">Loja/Canal: <strong>${filtroUnid === 'todas' ? 'Geral (Todas)' : filtroUnid}</strong></p>
+                        <p class="text-xs text-slate-500">Período: ${periodoStr}</p>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800">
+                                <th class="py-2">Atendente / Vendedora</th>
+                                <th class="py-2 text-center">Nº Vendas</th>
+                                <th class="py-2 text-center">Peças</th>
+                                <th class="py-2 text-right">Total Vendido</th>
+                                <th class="py-2 text-right">Comissão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trHtml || '<tr><td colspan="5" class="py-4 text-center text-slate-500">Nenhuma venda no período.</td></tr>'}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800">
+                            <tr>
+                                <td class="py-3 uppercase text-right" colspan="2">Totais Consolidados:</td>
+                                <td class="py-3 text-center">${grandPecas}</td>
+                                <td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(grandTotal)}</td>
+                                <td class="py-3 text-right text-indigo-700 text-lg">${formatBRL(grandComissao)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-8 text-center text-xs text-slate-400">
+                        ______________________________________________<br>
+                        Assinatura Conferência Administrativa
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('print-area').innerHTML = htmlContent;
+            document.getElementById('btn-copiar-whatsapp').classList.add('hidden');
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        function imprimirRelatorioDiario(dataStr) {
+            const vendasDoDia = db.vendas.filter(v => v.data === dataStr);
+            if (vendasDoDia.length === 0) return;
+
+            let totalValor = 0;
+            let totalPecas = 0;
+            const itensAgrupados = {};
+
+            vendasDoDia.forEach(v => {
+                // Se houver desconto na venda, rateamos ou apenas mostramos o valor final cobrado.
+                // Como queremos a análise real dos itens, usaremos os itens, mas também vamos somar eventuais descontos.
+                let descontoVenda = v.desconto || 0;
+                
+                (v.itens || []).forEach(item => {
+                    totalPecas += item.qtd;
+                    const chave = `${item.sku}_${v.canal}`;
+                    if (!itensAgrupados[chave]) {
+                        itensAgrupados[chave] = {
+                            nome: item.nome,
+                            sku: item.sku,
+                            qtd: 0,
+                            canal: v.canal,
+                            subtotal: 0
+                        };
+                    }
+                    itensAgrupados[chave].qtd += item.qtd;
+                    itensAgrupados[chave].subtotal += (item.preco * item.qtd);
+                });
+                totalValor += v.valor; // Valor final pago já com desconto
+            });
+
+            let trHtml = "";
+            Object.values(itensAgrupados).forEach(item => {
+                trHtml += `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-2 text-xs font-bold">${item.nome} <br><span class="text-[9px] text-slate-400 font-normal">${item.sku}</span></td>
+                        <td class="py-2 text-center text-xs badge bg-slate-100">${item.canal}</td>
+                        <td class="py-2 text-center font-bold">${item.qtd}</td>
+                        <td class="py-2 text-right font-bold text-slate-800">${formatBRL(item.subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const htmlContent = `
+                <div class="w-full">
+                    <div class="text-center border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase">Relatório de Vendas Diário</h2>
+                        <p class="text-sm font-semibold">Sintonia do Corpo</p>
+                        <p class="text-xs text-slate-500">Data de Referência: <strong class="text-indigo-700">${dataStr}</strong></p>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800">
+                                <th class="py-2">Produto</th>
+                                <th class="py-2 text-center">Local</th>
+                                <th class="py-2 text-center">Qtd</th>
+                                <th class="py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trHtml || '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum item detalhado.</td></tr>'}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800">
+                            <tr>
+                                <td class="py-3 uppercase text-right" colspan="2">Faturamento Consolidado do Dia:</td>
+                                <td class="py-3 text-center">${totalPecas} pçs</td>
+                                <td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(totalValor)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-8 text-center text-xs text-slate-400">
+                        ______________________________________________<br>
+                        Relatório Analítico de Vendas
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('print-area').innerHTML = htmlContent;
+            
+            let texto = `*RELATÓRIO DE VENDAS - ${dataStr}*\n\n`;
+            Object.values(itensAgrupados).forEach(i => {
+                texto += `- ${i.qtd}x ${i.nome} (${i.canal}): ${formatBRL(i.subtotal)}\n`;
+            });
+            texto += `\n*TOTAL VENDIDO: ${formatBRL(totalValor)} (${totalPecas} peças)*`;
+            textoCompartilhamento = texto;
+
+            const btnWpp = document.getElementById('btn-copiar-whatsapp');
+            if(btnWpp) btnWpp.classList.remove('hidden');
+            
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        const defaultData = {
+            fichas: [
+                { id: 1, nome: "Top Beatriz", tecido: "Suplex", custoTecido: 10.50, custoAviamento: 2.00, custoFaccao: 10.00, custoTotal: 22.50, precoVenda: 69.90, data: "08/11/2026" },
+                { id: 2, nome: "Calça com Bolso", tecido: "Jacquard", custoTecido: 25.00, custoAviamento: 5.00, custoFaccao: 12.00, custoTotal: 42.00, precoVenda: 129.90, data: "08/11/2026" }
+            ],
+            produtos: [
+                { id: 1, sku: "TOP-BEA-SUP-PRE-M", nome: "Top Beatriz", tecido: "Suplex", cor: "Preto", tam: "M", custo: 22.50, preco: 69.90, estConfeccao: 15, estTijuca: 12, estSaoCristovao: 10, estShopee: 0 },
+                { id: 2, sku: "TOP-JOA-KAP-ROS-G", nome: "Top Joana", tecido: "Kapana", cor: "Rosa", tam: "G", custo: 25.00, preco: 74.90, estConfeccao: 8, estTijuca: 9, estSaoCristovao: 7, estShopee: 5 },
+                { id: 3, sku: "CAL-BOL-JAC-AZU-M", nome: "Calça com Bolso", tecido: "Jacquard", cor: "Azul Marinho", tam: "M", custo: 42.00, preco: 129.90, estConfeccao: 10, estTijuca: 14, estSaoCristovao: 8, estShopee: 2 },
+                { id: 4, sku: "CON-SIN-KAP-VER-P", nome: "Conjunto Sinergia", tecido: "Kapana", cor: "Verde Militar", tam: "P", custo: 58.00, preco: 179.90, estConfeccao: 5, estTijuca: 6, estSaoCristovao: 5, estShopee: 0 }
+            ],
+            ops: [],
+            transferencias: [],
+            vendas: [],
+            contas: []
+        };
+
+        let db = JSON.parse(localStorage.getItem('sintonia_erp_v4_db')) || defaultData;
+        if (!db.fichas) db.fichas = defaultData.fichas;
+        db.produtos.forEach(p => { 
+            if (typeof p.custo === 'undefined') p.custo = +(p.preco * 0.35).toFixed(2);
+            if (typeof p.estShopee === 'undefined') p.estShopee = 0; 
+        });
+
+        let carrinhoPDV = [];
+        let carrinhoRomaneio = [];
+        let textoCompartilhamento = "";
+
+        function saveDB() {
+            localStorage.setItem('sintonia_erp_v4_db', JSON.stringify(db));
+            renderAll();
+        }
+
+        function formatBRL(v) {
+            return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            const tabEl = document.getElementById('tab-' + tab);
+            const btnEl = document.getElementById('btn-' + tab);
+            if (tabEl) tabEl.classList.add('active');
+            if (btnEl) btnEl.classList.add('active');
+            try {
+                renderAll();
+            } catch (err) {
+                console.error("Erro render:", err);
+            }
+        }
+
+        function filtrarCatalogo() {
+            const termo = document.getElementById('filtro-busca-catalogo').value.toLowerCase();
+            const linhas = document.querySelectorAll('#tabela-produtos tr');
+            linhas.forEach(tr => {
+                const texto = tr.innerText.toLowerCase();
+                tr.style.display = texto.includes(termo) ? '' : 'none';
+            });
+        }
+
+        // ================= CÓDIGO DE BARRAS (NOVA FUNCIONALIDADE) =================
+        function gerarEtiqueta(id) {
+            const p = db.produtos.find(x => x.id === id);
+            if (!p) return;
+            
+            // O HTML da etiqueta para impressão térmica (geralmente formato de cupom)
+            document.getElementById('print-area').innerHTML = `
+                <div class="text-center w-full max-w-[250px] mx-auto p-2">
+                    <h4 class="font-bold text-xs uppercase mb-1">Sintonia do Corpo</h4>
+                    <p class="text-xs font-semibold">${p.nome}</p>
+                    <p class="text-[10px] text-slate-500 mb-2">${p.cor} - Tam: ${p.tam}</p>
+                    <div class="flex justify-center w-full my-2">
+                        <svg id="barcode-svg" class="w-full"></svg>
+                    </div>
+                    <p class="font-bold text-sm mt-1">${formatBRL(p.preco)}</p>
+                </div>
+            `;
+            
+            // Renderiza o código de barras no elemento SVG criado acima
+            // Usando CODE128 que suporta letras e números do seu SKU (ex: TOP-BEA-SUP-PRE-M)
+            JsBarcode("#barcode-svg", p.sku, {
+                format: "CODE128",
+                lineColor: "#000",
+                width: 1.5,
+                height: 40,
+                displayValue: true,
+                fontSize: 10,
+                margin: 0
+            });
+
+            // Ocultar botão do whatsapp na etiqueta
+            document.getElementById('btn-copiar-whatsapp').classList.add('hidden');
+
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        function imprimirRelatorioDiario(dataStr) {
+            const vendasDoDia = db.vendas.filter(v => v.data === dataStr);
+            if (vendasDoDia.length === 0) return;
+
+            let totalValor = 0;
+            let totalPecas = 0;
+            const itensAgrupados = {};
+
+            vendasDoDia.forEach(v => {
+                // Se houver desconto na venda, rateamos ou apenas mostramos o valor final cobrado.
+                // Como queremos a análise real dos itens, usaremos os itens, mas também vamos somar eventuais descontos.
+                let descontoVenda = v.desconto || 0;
+                
+                (v.itens || []).forEach(item => {
+                    totalPecas += item.qtd;
+                    const chave = `${item.sku}_${v.canal}`;
+                    if (!itensAgrupados[chave]) {
+                        itensAgrupados[chave] = {
+                            nome: item.nome,
+                            sku: item.sku,
+                            qtd: 0,
+                            canal: v.canal,
+                            subtotal: 0
+                        };
+                    }
+                    itensAgrupados[chave].qtd += item.qtd;
+                    itensAgrupados[chave].subtotal += (item.preco * item.qtd);
+                });
+                totalValor += v.valor; // Valor final pago já com desconto
+            });
+
+            let trHtml = "";
+            Object.values(itensAgrupados).forEach(item => {
+                trHtml += `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-2 text-xs font-bold">${item.nome} <br><span class="text-[9px] text-slate-400 font-normal">${item.sku}</span></td>
+                        <td class="py-2 text-center text-xs badge bg-slate-100">${item.canal}</td>
+                        <td class="py-2 text-center font-bold">${item.qtd}</td>
+                        <td class="py-2 text-right font-bold text-slate-800">${formatBRL(item.subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const htmlContent = `
+                <div class="w-full">
+                    <div class="text-center border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase">Relatório de Vendas Diário</h2>
+                        <p class="text-sm font-semibold">Sintonia do Corpo</p>
+                        <p class="text-xs text-slate-500">Data de Referência: <strong class="text-indigo-700">${dataStr}</strong></p>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800">
+                                <th class="py-2">Produto</th>
+                                <th class="py-2 text-center">Local</th>
+                                <th class="py-2 text-center">Qtd</th>
+                                <th class="py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trHtml || '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum item detalhado.</td></tr>'}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800">
+                            <tr>
+                                <td class="py-3 uppercase text-right" colspan="2">Faturamento Consolidado do Dia:</td>
+                                <td class="py-3 text-center">${totalPecas} pçs</td>
+                                <td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(totalValor)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-8 text-center text-xs text-slate-400">
+                        ______________________________________________<br>
+                        Relatório Analítico de Vendas
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('print-area').innerHTML = htmlContent;
+            
+            let texto = `*RELATÓRIO DE VENDAS - ${dataStr}*\n\n`;
+            Object.values(itensAgrupados).forEach(i => {
+                texto += `- ${i.qtd}x ${i.nome} (${i.canal}): ${formatBRL(i.subtotal)}\n`;
+            });
+            texto += `\n*TOTAL VENDIDO: ${formatBRL(totalValor)} (${totalPecas} peças)*`;
+            textoCompartilhamento = texto;
+
+            const btnWpp = document.getElementById('btn-copiar-whatsapp');
+            if(btnWpp) btnWpp.classList.remove('hidden');
+            
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        // ====== FICHA DE CUSTOS ======
+        function simularFichaCusto() {
+            const precoTecido = parseFloat(document.getElementById('ficha-tecido-preco').value) || 0;
+            const consTecido = parseFloat(document.getElementById('ficha-tecido-cons').value) || 0;
+            const custoAviamento = parseFloat(document.getElementById('ficha-aviamento').value) || 0;
+            const custoEmb = parseFloat(document.getElementById('ficha-embalagem').value) || 0;
+            const custoFaccao = parseFloat(document.getElementById('ficha-costura').value) || 0;
+            const precoVenda = parseFloat(document.getElementById('ficha-preco').value) || 0;
+
+            const calcTecido = precoTecido * consTecido;
+            const calcExtras = custoAviamento + custoEmb;
+            const custoTotal = calcTecido + calcExtras + custoFaccao;
+            
+            document.getElementById('res-custo-tecido').innerText = formatBRL(calcTecido);
+            document.getElementById('res-custo-extra').innerText = formatBRL(calcExtras);
+            document.getElementById('res-custo-mao').innerText = formatBRL(custoFaccao);
+            document.getElementById('res-custo-total').innerText = formatBRL(custoTotal);
+
+            if (precoVenda > 0) {
+                const lucro = precoVenda - custoTotal;
+                const margem = (lucro / precoVenda) * 100;
+                const markup = custoTotal > 0 ? (precoVenda / custoTotal) : 0;
+                document.getElementById('res-lucro-proj').innerText = formatBRL(lucro);
+                document.getElementById('res-lucro-proj').className = lucro > 0 ? 'text-xl font-bold text-emerald-400' : 'text-xl font-bold text-rose-400';
+                document.getElementById('res-margem-proj').innerText = `${margem.toFixed(1)}% (${markup.toFixed(1)}x)`;
+            } else {
+                document.getElementById('res-lucro-proj').innerText = "R$ 0,00";
+                document.getElementById('res-margem-proj').innerText = "0% (0x)";
+            }
+        }
+
+        function salvarFicha() {
+            const nome = document.getElementById('ficha-nome').value.trim();
+            if (!nome) { alert("Dê um nome para a Ficha (ex: Top Beatriz)"); return; }
+            const tecido = document.getElementById('ficha-tecido-nome').value;
+            const calcTecido = (parseFloat(document.getElementById('ficha-tecido-preco').value) || 0) * (parseFloat(document.getElementById('ficha-tecido-cons').value) || 0);
+            const calcExtras = (parseFloat(document.getElementById('ficha-aviamento').value) || 0) + (parseFloat(document.getElementById('ficha-embalagem').value) || 0);
+            const custoFaccao = parseFloat(document.getElementById('ficha-costura').value) || 0;
+            const precoVenda = parseFloat(document.getElementById('ficha-preco').value) || 0;
+            const custoTotal = calcTecido + calcExtras + custoFaccao;
+
+            db.fichas.unshift({
+                id: Date.now(),
+                nome, tecido, custoTecido: calcTecido, custoAviamento: calcExtras, custoFaccao, custoTotal, precoVenda,
+                data: new Date().toLocaleDateString('pt-BR')
+            });
+            document.getElementById('ficha-nome').value = '';
+            document.getElementById('ficha-preco').value = '';
+            simularFichaCusto(); saveDB();
+        }
+
+        function excluirFicha(id) {
+            if(!confirm("Excluir Ficha Técnica?")) return;
+            db.fichas = db.fichas.filter(f => f.id !== id);
+            saveDB();
+        }
+
+        function gerarProdutoDaFicha(id) {
+            const f = db.fichas.find(x => x.id === id);
+            if (!f) return;
+            document.getElementById('prod-nome').value = f.nome;
+            const selectTec = document.getElementById('prod-tecido');
+            let found = false;
+            for(let i=0; i<selectTec.options.length; i++) {
+                if(selectTec.options[i].value.toLowerCase() === f.tecido.toLowerCase()) { selectTec.selectedIndex = i; found = true; break; }
+            }
+            if(!found) selectTec.selectedIndex = 0;
+            document.getElementById('prod-custo').value = f.custoTotal.toFixed(2);
+            document.getElementById('prod-preco').value = f.precoVenda.toFixed(2);
+            
+            switchTab('produtos');
+            document.getElementById('prod-cor').focus();
+            document.getElementById('titulo-form-catalogo').innerHTML = `Cadastrar Variações da ficha: <strong>${f.nome}</strong>`;
+        }
+
+        function gerarSKU(nome, tecido, cor, tam) {
+            const p1 = nome.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+            const p2 = tecido.substring(0, 3).toUpperCase();
+            const p3 = cor.replace(/[^a-zA-Z]/g, '').substring(0, 3).toUpperCase();
+            return `${p1}-${p2}-${p3}-${tam.toUpperCase()}`;
+        }
+
+        function addProduto(e) {
+            e.preventDefault();
+            const nome = document.getElementById('prod-nome').value.trim();
+            const tecido = document.getElementById('prod-tecido').value;
+            const cor = document.getElementById('prod-cor').value.trim();
+            const tamSel = document.getElementById('prod-tam').value;
+            const custo = parseFloat(document.getElementById('prod-custo').value) || 0;
+            const preco = parseFloat(document.getElementById('prod-preco').value) || 0;
+
+            let tamanhos = [tamSel];
+            if (tamSel === "GRADE_PMGG") tamanhos = ["P", "M", "G", "GG"];
+            if (tamSel === "GRADE_PMG") tamanhos = ["P", "M", "G"];
+
+            tamanhos.forEach((tam, idx) => {
+                const sku = gerarSKU(nome, tecido, cor, tam);
+                db.produtos.push({
+                    id: Date.now() + idx, sku, nome, tecido, cor, tam, custo, preco,
+                    estConfeccao: 0, estTijuca: 0, estSaoCristovao: 0, estShopee: 0
+                });
+            });
+
+            e.target.reset();
+            document.getElementById('titulo-form-catalogo').innerText = "Cadastrar Variações no Catálogo";
+            saveDB();
+        }
+
+        function abrirModalEditarProd(id) { 
+            const p = db.produtos.find(x => x.id === id); 
+            if (p) { 
+                document.getElementById('edit-prod-id').value = p.id; 
+                document.getElementById('edit-prod-nome').value = p.nome; 
+                document.getElementById('edit-prod-cor').value = p.cor; 
+                document.getElementById('edit-prod-tam').value = p.tam; 
+                document.getElementById('edit-prod-custo').value = p.custo; 
+                document.getElementById('edit-prod-preco').value = p.preco; 
+                
+                document.getElementById('edit-prod-fab').value = p.estConfeccao;
+                document.getElementById('edit-prod-tij').value = p.estTijuca;
+                document.getElementById('edit-prod-sc').value = p.estSaoCristovao;
+                document.getElementById('edit-prod-shp').value = p.estShopee || 0;
+
+                document.getElementById('modal-editar-prod').classList.remove('hidden'); 
+                document.getElementById('modal-editar-prod').classList.add('flex'); 
+            } 
+        }
+        function fecharModalEditarProd() { document.getElementById('modal-editar-prod').classList.add('hidden'); document.getElementById('modal-editar-prod').classList.remove('flex'); }
+        function salvarEdicaoProd() { 
+            const id = parseInt(document.getElementById('edit-prod-id').value); 
+            const p = db.produtos.find(x => x.id === id); 
+            if (p) { 
+                p.nome = document.getElementById('edit-prod-nome').value.trim(); 
+                p.cor = document.getElementById('edit-prod-cor').value.trim(); 
+                p.tam = document.getElementById('edit-prod-tam').value.trim(); 
+                p.custo = parseFloat(document.getElementById('edit-prod-custo').value) || 0; 
+                p.preco = parseFloat(document.getElementById('edit-prod-preco').value) || 0; 
+                p.sku = gerarSKU(p.nome, p.tecido, p.cor, p.tam); 
+                
+                p.estConfeccao = parseInt(document.getElementById('edit-prod-fab').value) || 0;
+                p.estTijuca = parseInt(document.getElementById('edit-prod-tij').value) || 0;
+                p.estSaoCristovao = parseInt(document.getElementById('edit-prod-sc').value) || 0;
+                p.estShopee = parseInt(document.getElementById('edit-prod-shp').value) || 0;
+
+                fecharModalEditarProd(); saveDB(); 
+            } 
+        }
+        function excluirProduto(id) { if (confirm("Excluir produto do catálogo?")) { db.produtos = db.produtos.filter(p => p.id !== id); saveDB(); } }
+
+        function addOP(e) { e.preventDefault(); const prodId = parseInt(document.getElementById('op-produto').value); const qtd = parseInt(document.getElementById('op-qtd').value); const obs = document.getElementById('op-obs').value || "Interno"; db.ops.unshift({ id: Date.now(), data: new Date().toLocaleDateString('pt-BR'), prodId, qtd, obs, status: "Corte" }); e.target.reset(); saveDB(); }
+        function avancarOP(opId) { const op = db.ops.find(o => o.id === opId); if (op) { const fluxo = ["Corte", "Costura", "Acabamento", "Finalizado"]; const idx = fluxo.indexOf(op.status); if (idx < fluxo.length - 1) { op.status = fluxo[idx + 1]; if (op.status === "Finalizado") { const prod = db.produtos.find(p => p.id === op.prodId); if (prod) prod.estConfeccao += op.qtd; } saveDB(); } } }
+        function excluirOP(opId) { const op = db.ops.find(o => o.id === opId); if (op && confirm("Excluir OP?")) { if (op.status === "Finalizado") { const p = db.produtos.find(x => x.id === op.prodId); if (p) p.estConfeccao = Math.max(0, p.estConfeccao - op.qtd); } db.ops = db.ops.filter(o => o.id !== opId); saveDB(); } }
+
+        function addItemRomaneio() { 
+            const buscaVal = document.getElementById('rom-produto-busca').value;
+            const sku = buscaVal.split(' | ')[0].trim();
+            const prod = db.produtos.find(x => x.sku === sku);
+            const qtd = parseInt(document.getElementById('rom-qtd').value) || 1; 
+            
+            if (!prod) { alert("Peça não encontrada! Digite no campo de busca e selecione da lista."); return; } 
+            
+            const cur = carrinhoRomaneio.find(i => i.prodId === prod.id); 
+            const t = (cur ? cur.qtd : 0) + qtd; 
+            if (prod.estConfeccao < t) { alert("Saldo insuficiente na Confecção!"); return; } 
+            
+            if (cur) cur.qtd += qtd; 
+            else carrinhoRomaneio.push({ prodId: prod.id, sku: prod.sku, nome: `${prod.nome} (${prod.cor} - ${prod.tam})`, qtd }); 
+            
+            document.getElementById('rom-qtd').value = 1; 
+            document.getElementById('rom-produto-busca').value = '';
+            renderCarrinhoRomaneio(); 
+        }
+        function removerItemRomaneio(idx) { carrinhoRomaneio.splice(idx, 1); renderCarrinhoRomaneio(); }
+        function limparCarrinhoRomaneio() { carrinhoRomaneio = []; renderCarrinhoRomaneio(); }
+        
+        function finalizarRomaneio() { 
+            if (!carrinhoRomaneio.length) return; 
+            const destino = document.getElementById('rom-destino').value; 
+            carrinhoRomaneio.forEach(i => { 
+                const p = db.produtos.find(x => x.id === i.prodId); 
+                if (p) { 
+                    p.estConfeccao -= i.qtd; 
+                    if (destino === "Loja Tijuca") p.estTijuca += i.qtd; 
+                    else if (destino === "Loja São Cristóvão") p.estSaoCristovao += i.qtd; 
+                    else if (destino === "Estoque Shopee") p.estShopee += i.qtd; 
+                } 
+            }); 
+            const rom = { id: Date.now(), data: new Date().toLocaleString('pt-BR').slice(0, 16), destino, itens: [...carrinhoRomaneio], totalPecas: carrinhoRomaneio.reduce((a, b) => a + b.qtd, 0) }; 
+            db.transferencias.unshift(rom); carrinhoRomaneio = []; saveDB(); verRomaneioImpressao(rom.id); 
+        }
+        
+        function verRomaneioImpressao(id) {
+            const rom = db.transferencias.find(t => t.id === id);
+            if (!rom) return;
+            const lis = rom.itens.map(i => `<div class="flex justify-between py-1.5 border-b border-slate-100"><span><strong>${i.qtd}x</strong> ${i.nome} <small class="text-slate-400">(${i.sku})</small></span><span>[ &nbsp; ] Conferido</span></div>`).join('');
+            document.getElementById('print-area').innerHTML = `<div class="text-left w-full"><div class="text-center border-b border-slate-200 pb-3"><h4 class="font-bold uppercase">Sintonia • Romaneio</h4><p class="text-xs">Destino: <strong>${rom.destino}</strong></p><p class="text-xs">Emissão: ${rom.data}</p></div><div class="py-2">${lis}</div><div class="flex justify-between font-bold pt-2 border-t border-slate-200"><span>Total Enviado:</span><span>${rom.totalPecas} pçs</span></div></div>`;
+            
+            let texto = `*ROMANEIO DE ENVIO - SINTONIA*\nDestino: ${rom.destino}\nData: ${rom.data}\n\n`;
+            rom.itens.forEach(i => texto += `- ${i.qtd}x ${i.nome}\n`);
+            textoCompartilhamento = texto + `\n*Total: ${rom.totalPecas} peças*`;
+            
+            document.getElementById('btn-copiar-whatsapp').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        function imprimirRelatorioDiario(dataStr) {
+            const vendasDoDia = db.vendas.filter(v => v.data === dataStr);
+            if (vendasDoDia.length === 0) return;
+
+            let totalValor = 0;
+            let totalPecas = 0;
+            const itensAgrupados = {};
+
+            vendasDoDia.forEach(v => {
+                // Se houver desconto na venda, rateamos ou apenas mostramos o valor final cobrado.
+                // Como queremos a análise real dos itens, usaremos os itens, mas também vamos somar eventuais descontos.
+                let descontoVenda = v.desconto || 0;
+                
+                (v.itens || []).forEach(item => {
+                    totalPecas += item.qtd;
+                    const chave = `${item.sku}_${v.canal}`;
+                    if (!itensAgrupados[chave]) {
+                        itensAgrupados[chave] = {
+                            nome: item.nome,
+                            sku: item.sku,
+                            qtd: 0,
+                            canal: v.canal,
+                            subtotal: 0
+                        };
+                    }
+                    itensAgrupados[chave].qtd += item.qtd;
+                    itensAgrupados[chave].subtotal += (item.preco * item.qtd);
+                });
+                totalValor += v.valor; // Valor final pago já com desconto
+            });
+
+            let trHtml = "";
+            Object.values(itensAgrupados).forEach(item => {
+                trHtml += `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-2 text-xs font-bold">${item.nome} <br><span class="text-[9px] text-slate-400 font-normal">${item.sku}</span></td>
+                        <td class="py-2 text-center text-xs badge bg-slate-100">${item.canal}</td>
+                        <td class="py-2 text-center font-bold">${item.qtd}</td>
+                        <td class="py-2 text-right font-bold text-slate-800">${formatBRL(item.subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const htmlContent = `
+                <div class="w-full">
+                    <div class="text-center border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase">Relatório de Vendas Diário</h2>
+                        <p class="text-sm font-semibold">Sintonia do Corpo</p>
+                        <p class="text-xs text-slate-500">Data de Referência: <strong class="text-indigo-700">${dataStr}</strong></p>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800">
+                                <th class="py-2">Produto</th>
+                                <th class="py-2 text-center">Local</th>
+                                <th class="py-2 text-center">Qtd</th>
+                                <th class="py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trHtml || '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum item detalhado.</td></tr>'}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800">
+                            <tr>
+                                <td class="py-3 uppercase text-right" colspan="2">Faturamento Consolidado do Dia:</td>
+                                <td class="py-3 text-center">${totalPecas} pçs</td>
+                                <td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(totalValor)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-8 text-center text-xs text-slate-400">
+                        ______________________________________________<br>
+                        Relatório Analítico de Vendas
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('print-area').innerHTML = htmlContent;
+            
+            let texto = `*RELATÓRIO DE VENDAS - ${dataStr}*\n\n`;
+            Object.values(itensAgrupados).forEach(i => {
+                texto += `- ${i.qtd}x ${i.nome} (${i.canal}): ${formatBRL(i.subtotal)}\n`;
+            });
+            texto += `\n*TOTAL VENDIDO: ${formatBRL(totalValor)} (${totalPecas} peças)*`;
+            textoCompartilhamento = texto;
+
+            const btnWpp = document.getElementById('btn-copiar-whatsapp');
+            if(btnWpp) btnWpp.classList.remove('hidden');
+            
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+        
+        function excluirRomaneio(id) { 
+            const rom = db.transferencias.find(t => t.id === id); 
+            if (rom && confirm("Estornar Romaneio?")) { 
+                rom.itens.forEach(i => { 
+                    const p = db.produtos.find(x => x.id === i.prodId); 
+                    if (p) { 
+                        p.estConfeccao += i.qtd; 
+                        if (rom.destino === "Loja Tijuca") p.estTijuca = Math.max(0, p.estTijuca - i.qtd); 
+                        else if (rom.destino === "Loja São Cristóvão") p.estSaoCristovao = Math.max(0, p.estSaoCristovao - i.qtd);
+                        else if (rom.destino === "Estoque Shopee") p.estShopee = Math.max(0, p.estShopee - i.qtd);
+                    } 
+                }); 
+                db.transferencias = db.transferencias.filter(t => t.id !== id); 
+                saveDB(); 
+            } 
+        }
+
+        // ====== PDV ======
+        function addItemPDV() { 
+            const canal = document.getElementById('pdv-canal').value; 
+            const buscaVal = document.getElementById('pdv-produto-busca').value;
+            const sku = buscaVal.split(' | ')[0].trim();
+            const p = db.produtos.find(x => x.sku === sku);
+            const q = parseInt(document.getElementById('pdv-qtd').value) || 1; 
+            
+            if (!p) { alert("Selecione um produto válido da lista de busca."); return; } 
+            
+            let saldo = 0; let nomeEst = "";
+            if (canal === "Loja Tijuca" || canal === "Shopee" || canal === "Nuvemshop") { saldo = p.estTijuca; nomeEst = "Tijuca"; }
+            else if (canal === "Loja São Cristóvão" || canal === "Shopee SC") { saldo = p.estSaoCristovao; nomeEst = "São Cristóvão"; }
+            else if (canal === "Estoque Shopee") { saldo = p.estShopee; nomeEst = "Shopee"; }
+
+            const item = carrinhoPDV.find(i => i.prodId === p.id); 
+            const tot = (item ? item.qtd : 0) + q; 
+            
+            if (saldo < tot) { alert(`Estoque insuficiente na loja ${nomeEst}! Saldo atual: ${saldo}`); return; } 
+            
+            if (item) item.qtd += q; 
+            else carrinhoPDV.push({ prodId: p.id, sku: p.sku, nome: `${p.nome} (${p.cor} - ${p.tam})`, qtd: q, preco: p.preco, custo: p.custo || 0 }); 
+            
+            document.getElementById('pdv-qtd').value = 1; 
+            document.getElementById('pdv-produto-busca').value = '';
+            renderCarrinhoPDV(); 
+        }
+        function removerItemPDV(idx) { carrinhoPDV.splice(idx, 1); renderCarrinhoPDV(); }
+        
+        function finalizarVendaPDV() { 
+            if (!carrinhoPDV.length) return; 
+            const canal = document.getElementById('pdv-canal').value; 
+            const desc = parseFloat(document.getElementById('pdv-desconto').value) || 0; 
+            const pg = document.getElementById('pdv-pgto').value; 
+            const vend = document.getElementById('pdv-vendedora').value || "Balcão"; 
+            
+            const sub = carrinhoPDV.reduce((a, b) => a + (b.preco * b.qtd), 0); 
+            const cust = carrinhoPDV.reduce((a, b) => a + (b.custo * b.qtd), 0); 
+            const val = Math.max(0, sub - desc); 
+            
+            carrinhoPDV.forEach(i => { 
+                const p = db.produtos.find(x => x.id === i.prodId); 
+                if (p) { 
+                    if (canal === "Loja Tijuca" || canal === "Shopee" || canal === "Nuvemshop") p.estTijuca -= i.qtd;
+                    else if (canal === "Loja São Cristóvão" || canal === "Shopee SC") p.estSaoCristovao -= i.qtd;
+                    else if (canal === "Estoque Shopee") p.estShopee -= i.qtd;
+                } 
+            }); 
+            const nv = { id: Date.now(), data: new Date().toLocaleDateString('pt-BR'), canal, vendedora: vend, pgto: pg, desconto: desc, valor: val, custoTotal: cust, itens: [...carrinhoPDV] }; 
+            db.vendas.unshift(nv); carrinhoPDV = []; document.getElementById('pdv-desconto').value = 0; document.getElementById('pdv-vendedora').value = ""; saveDB(); verReciboVenda(nv.id); 
+        }
+
+        function verReciboVenda(id) {
+            const v = db.vendas.find(x => x.id === id); if (!v) return;
+            const lis = (v.itens || []).map(i => `<div class="flex justify-between py-1 border-b border-slate-100"><span>${i.qtd}x ${i.nome}</span><span>${formatBRL(i.preco * i.qtd)}</span></div>`).join('');
+            document.getElementById('print-area').innerHTML = `<div class="text-left w-full"><div class="text-center border-b border-slate-200 pb-3"><h4 class="font-bold uppercase">Sintonia • Recibo</h4><p class="text-xs">Unidade: ${v.canal}</p><p class="text-xs">Data: ${v.data} • Pgto: ${v.pgto}</p></div><div class="py-2">${lis}</div>${v.desconto > 0 ? `<div class="flex justify-between text-xs text-rose-600"><span>Desconto:</span><span>- ${formatBRL(v.desconto)}</span></div>` : ''}<div class="flex justify-between font-bold pt-2 border-t border-slate-200"><span>Total Pago:</span><span>${formatBRL(v.valor)}</span></div></div>`;
+            
+            let texto = `*RECIBO DE VENDA - SINTONIA*\nUnidade: ${v.canal}\nData: ${v.data}\n\n`;
+            (v.itens || []).forEach(i => texto += `- ${i.qtd}x ${i.nome}: ${formatBRL(i.preco * i.qtd)}\n`);
+            if (v.desconto > 0) texto += `Desconto: -${formatBRL(v.desconto)}\n`;
+            textoCompartilhamento = texto + `\n*Total Pago: ${formatBRL(v.valor)}*`;
+            
+            document.getElementById('btn-copiar-whatsapp').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+
+        function imprimirRelatorioDiario(dataStr) {
+            const vendasDoDia = db.vendas.filter(v => v.data === dataStr);
+            if (vendasDoDia.length === 0) return;
+
+            let totalValor = 0;
+            let totalPecas = 0;
+            const itensAgrupados = {};
+
+            vendasDoDia.forEach(v => {
+                // Se houver desconto na venda, rateamos ou apenas mostramos o valor final cobrado.
+                // Como queremos a análise real dos itens, usaremos os itens, mas também vamos somar eventuais descontos.
+                let descontoVenda = v.desconto || 0;
+                
+                (v.itens || []).forEach(item => {
+                    totalPecas += item.qtd;
+                    const chave = `${item.sku}_${v.canal}`;
+                    if (!itensAgrupados[chave]) {
+                        itensAgrupados[chave] = {
+                            nome: item.nome,
+                            sku: item.sku,
+                            qtd: 0,
+                            canal: v.canal,
+                            subtotal: 0
+                        };
+                    }
+                    itensAgrupados[chave].qtd += item.qtd;
+                    itensAgrupados[chave].subtotal += (item.preco * item.qtd);
+                });
+                totalValor += v.valor; // Valor final pago já com desconto
+            });
+
+            let trHtml = "";
+            Object.values(itensAgrupados).forEach(item => {
+                trHtml += `
+                    <tr class="border-b border-slate-200">
+                        <td class="py-2 text-xs font-bold">${item.nome} <br><span class="text-[9px] text-slate-400 font-normal">${item.sku}</span></td>
+                        <td class="py-2 text-center text-xs badge bg-slate-100">${item.canal}</td>
+                        <td class="py-2 text-center font-bold">${item.qtd}</td>
+                        <td class="py-2 text-right font-bold text-slate-800">${formatBRL(item.subtotal)}</td>
+                    </tr>
+                `;
+            });
+
+            const htmlContent = `
+                <div class="w-full">
+                    <div class="text-center border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-xl font-bold uppercase">Relatório de Vendas Diário</h2>
+                        <p class="text-sm font-semibold">Sintonia do Corpo</p>
+                        <p class="text-xs text-slate-500">Data de Referência: <strong class="text-indigo-700">${dataStr}</strong></p>
+                    </div>
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800">
+                                <th class="py-2">Produto</th>
+                                <th class="py-2 text-center">Local</th>
+                                <th class="py-2 text-center">Qtd</th>
+                                <th class="py-2 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${trHtml || '<tr><td colspan="4" class="py-4 text-center text-slate-500">Nenhum item detalhado.</td></tr>'}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800">
+                            <tr>
+                                <td class="py-3 uppercase text-right" colspan="2">Faturamento Consolidado do Dia:</td>
+                                <td class="py-3 text-center">${totalPecas} pçs</td>
+                                <td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(totalValor)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-8 text-center text-xs text-slate-400">
+                        ______________________________________________<br>
+                        Relatório Analítico de Vendas
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('print-area').innerHTML = htmlContent;
+            
+            let texto = `*RELATÓRIO DE VENDAS - ${dataStr}*\n\n`;
+            Object.values(itensAgrupados).forEach(i => {
+                texto += `- ${i.qtd}x ${i.nome} (${i.canal}): ${formatBRL(i.subtotal)}\n`;
+            });
+            texto += `\n*TOTAL VENDIDO: ${formatBRL(totalValor)} (${totalPecas} peças)*`;
+            textoCompartilhamento = texto;
+
+            const btnWpp = document.getElementById('btn-copiar-whatsapp');
+            if(btnWpp) btnWpp.classList.remove('hidden');
+            
+            document.getElementById('modal-impressao').classList.remove('hidden');
+            document.getElementById('modal-impressao').classList.add('flex');
+        }
+        
+        function excluirVenda(id) { 
+            const v = db.vendas.find(x => x.id === id); 
+            if (v && confirm("Cancelar Venda?")) { 
+                v.itens.forEach(i => { 
+                    const p = db.produtos.find(x => x.id === i.prodId); 
+                    if (p) { 
+                        if (v.canal === "Loja Tijuca" || v.canal === "Shopee" || v.canal === "Nuvemshop") p.estTijuca += i.qtd;
+                        else if (v.canal === "Loja São Cristóvão" || v.canal === "Shopee SC") p.estSaoCristovao += i.qtd;
+                        else if (v.canal === "Estoque Shopee") p.estShopee += i.qtd;
+                    } 
+                }); 
+                db.vendas = db.vendas.filter(x => x.id !== id); saveDB(); 
+            } 
+        }
+
+        function fecharModalImpressao() { document.getElementById('modal-impressao').classList.add('hidden'); document.getElementById('modal-impressao').classList.remove('flex'); }
+        function copiarTextoModal() { navigator.clipboard.writeText(textoCompartilhamento); alert("Copiado!"); }
+
+        function addConta(e) { e.preventDefault(); db.contas.push({ id: Date.now(), venc: document.getElementById('conta-venc').value, desc: document.getElementById('conta-desc').value, cat: document.getElementById('conta-cat').value, unidade: document.getElementById('conta-unidade').value, valor: parseFloat(document.getElementById('conta-valor').value), status: "Pendente" }); e.target.reset(); saveDB(); }
+        function alternarStatusConta(id) { const c = db.contas.find(x => x.id === id); if (c) { c.status = c.status === "Pendente" ? "Pago" : "Pendente"; saveDB(); } }
+        function excluirConta(id) { if (confirm("Excluir lançamento financeiro?")) { db.contas = db.contas.filter(c => c.id !== id); saveDB(); } }
+
+        function exportBackup() { const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db)); const dlAnchor = document.createElement('a'); dlAnchor.setAttribute("href", dataStr); dlAnchor.setAttribute("download", "sintonia_erp_backup.json"); dlAnchor.click(); }
+        function importBackup(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { db = JSON.parse(e.target.result); saveDB(); alert("Restaurado!"); } catch (err) { alert("Inválido"); } }; reader.readAsText(file); }
+
+        function renderCarrinhoRomaneio() {
+            const tb = document.getElementById('tabela-carrinho-romaneio'); const tot = carrinhoRomaneio.reduce((a, b) => a + b.qtd, 0); document.getElementById('rom-resumo-pecas').innerText = `${tot} peças`;
+            tb.innerHTML = carrinhoRomaneio.length ? carrinhoRomaneio.map((i, idx) => `<tr><td class="p-3 text-xs">${i.sku}</td><td class="p-3 font-medium">${i.nome}</td><td class="p-3 text-center font-bold">${i.qtd}</td><td class="p-3 text-right"><button onclick="removerItemRomaneio(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') : `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-400">Vazio.</td></tr>`;
+        }
+        function renderCarrinhoPDV() {
+            const tb = document.getElementById('tabela-carrinho-pdv'); const totQtd = carrinhoPDV.reduce((a, b) => a + b.qtd, 0); const totSub = carrinhoPDV.reduce((a, b) => a + (b.preco * b.qtd), 0); const totCusto = carrinhoPDV.reduce((a, b) => a + (b.custo * b.qtd), 0); const desc = parseFloat(document.getElementById('pdv-desconto').value) || 0; const final = Math.max(0, totSub - desc);
+            document.getElementById('pdv-resumo-itens').innerText = `${totQtd} peças`; document.getElementById('pdv-total-final').innerText = formatBRL(final); document.getElementById('pdv-lucro-previsto').innerText = `Lucro Bruto (Peças): ${formatBRL(final - totCusto)}`;
+            tb.innerHTML = carrinhoPDV.length ? carrinhoPDV.map((i, idx) => `<tr><td class="p-3 font-medium">${i.nome}</td><td class="p-3 text-center font-bold">${i.qtd}</td><td class="p-3 text-slate-500">${formatBRL(i.preco)}</td><td class="p-3 font-semibold">${formatBRL(i.preco * i.qtd)}</td><td class="p-3 text-right"><button onclick="removerItemPDV(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') : `<tr><td colspan="5" class="p-4 text-center text-xs text-slate-400">Carrinho Vazio.</td></tr>`;
+        }
+
+        // ====== RENDERIZAÇÃO GERAL ======
+        function renderAll() {
+            // Selects Gerais - Datalists com Busca
+            const listaHtml = db.produtos.map(p => `<option value="${p.sku} | ${p.nome} ${p.cor} [${p.tam}] | R$ ${p.preco.toFixed(2)}"></option>`).join('');
+            document.getElementById('pdv-produtos-list').innerHTML = listaHtml;
+            document.getElementById('rom-produtos-list').innerHTML = listaHtml;
+            document.getElementById('op-produto').innerHTML = db.produtos.map(p => `<option value="${p.id}">${p.sku} - ${p.nome} (${p.cor} ${p.tam})</option>`).join('');
+
+            // Tabela Fichas Técnicas
+            document.getElementById('tabela-fichas').innerHTML = (db.fichas || []).map(f => {
+                const lucro = f.precoVenda - f.custoTotal; const margem = f.precoVenda > 0 ? (lucro/f.precoVenda)*100 : 0;
+                return `<tr class="hover:bg-slate-50"><td class="p-4 text-xs text-slate-500">${f.data}</td><td class="p-4 font-bold">${f.nome}</td><td class="p-4 text-xs">${f.tecido}</td><td class="p-4 font-bold text-slate-900">${formatBRL(f.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(f.precoVenda)}</td><td class="p-4 text-xs badge bg-slate-100">${margem.toFixed(1)}%</td><td class="p-4 text-right space-x-2"><button onclick="gerarProdutoDaFicha(${f.id})" class="badge bg-pink-100 text-pink-700 hover:bg-pink-200">Gerar Catálogo ➡</button><button onclick="excluirFicha(${f.id})" class="text-slate-400 hover:text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+
+            // Tabela Produtos
+            document.getElementById('tabela-produtos').innerHTML = db.produtos.map(p => {
+                const tot = p.estConfeccao + p.estTijuca + p.estSaoCristovao + (p.estShopee||0); const lucro = p.preco - (p.custo||0);
+                return `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td><td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td><td class="p-3"><span class="text-slate-500 font-medium">${formatBRL(p.custo)}</span><br><span class="font-bold">${formatBRL(p.preco)}</span></td><td class="p-3 font-bold text-emerald-600">${formatBRL(lucro)}</td><td class="p-3 text-center bg-amber-50/30 text-amber-900 font-bold">${p.estConfeccao}</td><td class="p-3 text-center bg-blue-50/30 text-blue-900 font-bold">${p.estTijuca}</td><td class="p-3 text-center bg-purple-50/30 text-purple-900 font-bold">${p.estSaoCristovao}</td><td class="p-3 text-center bg-orange-50/30 text-orange-900 font-bold">${p.estShopee||0}</td><td class="p-3 text-center font-bold text-slate-900">${tot}</td><td class="p-3 text-right flex flex-col gap-2"><button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500"><i class="fa-solid fa-pen"></i></button><button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500 hover:text-slate-900" title="Imprimir Etiqueta"><i class="fa-solid fa-barcode"></i></button><button onclick="excluirProduto(${p.id})" class="text-slate-300 hover:text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+
+            // Tabela OP
+            document.getElementById('tabela-ops').innerHTML = db.ops.map(o => {
+                const p = db.produtos.find(x => x.id === o.prodId);
+                const btn = o.status !== "Finalizado" ? `<button onclick="avancarOP(${o.id})" class="badge bg-slate-800 text-white">Avançar ➡</button>` : `<span class="badge bg-emerald-100 text-emerald-800">No Estoque</span>`;
+                return `<tr><td class="p-4 font-bold text-xs">#OP-${o.id}</td><td class="p-4 text-xs">${o.data}</td><td class="p-4 font-medium">${p ? p.nome : 'Removido'}</td><td class="p-4 font-bold">${o.qtd}</td><td class="p-4 text-xs">${o.obs}</td><td class="p-4"><span class="badge bg-slate-100">${o.status}</span></td><td class="p-4 text-right">${btn} <button onclick="excluirOP(${o.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+
+            // Tabela Romaneio List
+            document.getElementById('tabela-transferencias').innerHTML = db.transferencias.map(t => {
+                return `<tr><td class="p-4 font-bold text-xs">#ROM-${t.id}</td><td class="p-4 text-xs">${t.data}</td><td class="p-4 font-bold text-indigo-700">${t.destino}</td><td class="p-4 text-xs max-w-xs truncate">${t.itens.map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4 text-center font-bold">${t.totalPecas}</td><td class="p-4 text-right"><button onclick="verRomaneioImpressao(${t.id})" class="badge bg-indigo-100 text-indigo-800 mr-2">Ver PDF</button><button onclick="excluirRomaneio(${t.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+
+            // Tabela Vendas List
+            document.getElementById('tabela-vendas').innerHTML = db.vendas.map(v => {
+                const mrg = v.valor > 0 ? ((v.valor - v.custoTotal)/v.valor)*100 : 0;
+                return `<tr><td class="p-4 text-xs"><span class="font-bold">#${v.id}</span><br>${v.data}</td><td class="p-4 font-semibold text-xs">${v.canal}<br><span class="font-normal text-slate-400">${v.vendedora}</span></td><td class="p-4 text-xs max-w-xs truncate">${v.itens.map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4"><span class="badge bg-slate-100">${v.pgto}</span></td><td class="p-4 text-slate-500">${formatBRL(v.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(v.valor)}</td><td class="p-4"><span class="font-bold text-blue-600">${formatBRL(v.valor - v.custoTotal)}</span> <span class="text-xs text-slate-400">(${mrg.toFixed(0)}%)</span></td><td class="p-4 text-right"><button onclick="verReciboVenda(${v.id})" class="text-slate-500 mr-2"><i class="fa-solid fa-receipt"></i></button><button onclick="excluirVenda(${v.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+
+            // Tabela Contas List
+            document.getElementById('tabela-contas').innerHTML = db.contas.map(c => {
+                const pago = c.status === "Pago";
+                return `<tr><td class="p-4 text-xs">${c.venc.split('-').reverse().join('/')}</td><td class="p-4 font-medium">${c.desc}</td><td class="p-4 text-xs">${c.cat}</td><td class="p-4 text-xs"><span class="badge bg-slate-100">${c.unidade}</span></td><td class="p-4 font-bold ${pago ? 'text-slate-400 line-through' : 'text-rose-600'}">${formatBRL(c.valor)}</td><td class="p-4"><span class="badge ${pago ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${c.status}</span></td><td class="p-4 text-right"><button onclick="alternarStatusConta(${c.id})" class="badge bg-slate-800 text-white mr-2">${pago ? 'Desfazer' : 'Pagar Agora'}</button><button onclick="excluirConta(${c.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+
+            // ---------------- DASHBOARD & RESULTADOS ----------------
+            popularSelectVendedoras();
+
+            const filtroUnid = document.getElementById('filtro-unidade-dash').value;
+            const filtroVend = document.getElementById('filtro-vendedora-dash').value;
+            const dates = getFiltroDatas();
+
+            // Filtragem Multipla (Unidade + Vendedora + Data)
+            let vf = db.vendas;
+            if (filtroUnid !== "todas") vf = vf.filter(v => v.canal.includes(filtroUnid));
+            if (filtroVend !== "todas") vf = vf.filter(v => v.vendedora === filtroVend);
+            if (dates.inicio) vf = vf.filter(v => parseBrDate(v.data) >= dates.inicio);
+            if (dates.fim) vf = vf.filter(v => parseBrDate(v.data) <= dates.fim);
+
+            const rec = vf.reduce((a, v) => a + v.valor, 0);
+            const cpv = vf.reduce((a, v) => a + (v.custoTotal||0), 0);
+            const luc = rec - cpv;
+            
+            // Comissão projetada sobre o faturamento filtrado
+            
+            let comissao_total = 0;
+            if (rec <= 25000) {
+                comissao_total = rec * 0.01;
+            } else {
+                comissao_total = (25000 * 0.01) + ((rec - 25000) * 0.015);
+            }
+
+
+            document.getElementById('kpi-vendas-valor').innerText = formatBRL(rec);
+            document.getElementById('kpi-vendas-qtd').innerText = `${vf.length} vendas registradas`;
+            document.getElementById('kpi-lucro-bruto').innerText = formatBRL(luc);
+            document.getElementById('kpi-margem-media').innerText = `Margem Média: ${rec>0 ? (luc/rec*100).toFixed(1) : 0}%`;
+            document.getElementById('kpi-comissao-valor').innerText = formatBRL(comissao_total);
+
+            // Filtro Contas (Sempre puxa a data, e puxa unidade se filtrado)
+            let cf = db.contas;
+            if (filtroUnid !== "todas") cf = cf.filter(c => c.unidade === filtroUnid || (["Shopee", "Nuvemshop"].includes(filtroUnid) && c.unidade === "Geral / E-commerce"));
+            // (Contas não filtramos por Vendedora)
+            if (dates.inicio) cf = cf.filter(c => new Date(c.venc+"T12:00:00") >= dates.inicio);
+            if (dates.fim) cf = cf.filter(c => new Date(c.venc+"T12:00:00") <= dates.fim);
+
+            const dPago = cf.filter(c => c.status === "Pago").reduce((a, c) => a + c.valor, 0);
+            const dPend = cf.filter(c => c.status === "Pendente").reduce((a, c) => a + c.valor, 0);
+            document.getElementById('kpi-contas-pagas').innerText = `Total Pago no período: ${formatBRL(dPago)}`;
+            document.getElementById('kpi-contas-pendentes').innerText = formatBRL(dPend);
+
+
+
+            // Dashboard - Resumo Diário de Vendas
+            const vendasPorDia = {};
+            let totalPeriodoVendas = 0;
+            
+            vf.forEach(v => {
+                const dia = v.data; // formato DD/MM/YYYY
+                if(!vendasPorDia[dia]) vendasPorDia[dia] = { valor: 0, qtd: 0 };
+                vendasPorDia[dia].valor += v.valor;
+                vendasPorDia[dia].qtd += 1;
+                totalPeriodoVendas += v.valor;
+            });
+            
+            const diasOrdenados = Object.keys(vendasPorDia).sort((a,b) => parseBrDate(b) - parseBrDate(a)); // Decrescente
+            const elResumoDiario = document.getElementById('resumo-diario-vendas');
+            if(elResumoDiario) {
+                if (diasOrdenados.length > 0) {
+                    const listHtml = diasOrdenados.map(dia => {
+                        const r = vendasPorDia[dia];
+                        return `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div><span class="font-bold text-slate-800 block">${dia}</span><span class="text-xs text-slate-500">${r.qtd} venda(s)</span></div>
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="imprimirRelatorioDiario('${dia}')" class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded hover:bg-slate-700 transition uppercase font-bold tracking-wider" title="Ver Detalhes do Dia"><i class="fa-solid fa-list mr-1"></i> Detalhes</button>
+                                        <span class="font-bold text-emerald-600">${formatBRL(r.valor)}</span>
+                                    </div>
+                                </div>`;
+                    }).join('');
+                    
+                    const totalBox = `<div class="flex items-center justify-between p-3 bg-indigo-50 rounded-xl border border-indigo-100 mb-2">
+                                        <span class="font-bold text-indigo-900 text-sm">TOTAL DO PERÍODO</span>
+                                        <span class="font-black text-indigo-700 text-lg">${formatBRL(totalPeriodoVendas)}</span>
+                                      </div>`;
+                                      
+                    elResumoDiario.innerHTML = totalBox + listHtml;
+                } else {
+                    elResumoDiario.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">Nenhuma venda neste período.</p>`;
+                }
+            }
+
+            // Dashboard - Contas a Pagar Crescente
+            const elContasPagar = document.getElementById('resumo-contas-pagar');
+            if(elContasPagar) {
+                // Pega de db.contas para ignorar o filtro de data do dashboard
+                let contasPendentes = db.contas.filter(c => c.status === "Pendente");
+                if (filtroUnid !== "todas") {
+                    contasPendentes = contasPendentes.filter(c => c.unidade === filtroUnid || (["Shopee", "Nuvemshop"].includes(filtroUnid) && c.unidade === "Geral / E-commerce"));
+                }
+                
+                contasPendentes.sort((a, b) => new Date(a.venc+"T12:00:00") - new Date(b.venc+"T12:00:00"));
+                
+                if (contasPendentes.length > 0) {
+                    elContasPagar.innerHTML = contasPendentes.map(c => {
+                        const dataFormatada = c.venc.split('-').reverse().join('/');
+                        const hoje = new Date();
+                        hoje.setHours(0,0,0,0);
+                        const isAtrasada = new Date(c.venc+"T12:00:00") < hoje;
+                        const corVenc = isAtrasada ? "text-rose-600 font-bold" : "text-slate-600";
+                        const badge = isAtrasada ? `<span class="badge bg-rose-100 text-rose-800 ml-2">Atrasada</span>` : '';
+                        
+                        return `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="truncate pr-2">
+                                        <span class="font-bold text-slate-800 block truncate">${c.desc}</span>
+                                        <span class="text-xs ${corVenc}">Venc: ${dataFormatada}${badge}</span>
+                                    </div>
+                                    <span class="font-bold text-rose-600 whitespace-nowrap">${formatBRL(c.valor)}</span>
+                                </div>`;
+                    }).join('');
+                } else {
+                    elContasPagar.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">Nenhuma conta pendente para este filtro.</p>`;
+                }
+            }
+
+            
+            // Dashboard - Comparativo DRE Mensal (Lucro/Prejuízo)
+            const elDRE = document.getElementById('tabela-dre-mensal');
+            if (elDRE) {
+                const meses = {};
+                
+                // Agrupar Vendas por Mês
+                db.vendas.forEach(v => {
+                    if (filtroUnid !== "todas" && !v.canal.includes(filtroUnid)) return;
+                    
+                    const partes = v.data.split('/');
+                    if (partes.length === 3) {
+                        const mesAno = `${partes[1]}/${partes[2]}`;
+                        if (!meses[mesAno]) meses[mesAno] = { faturamento: 0, custoProd: 0, despesas: 0 };
+                        meses[mesAno].faturamento += v.valor;
+                        meses[mesAno].custoProd += (v.custoTotal || 0);
+                    }
+                });
+
+                // Agrupar Contas Pagas e Pendentes (Despesas) por Mês
+                db.contas.forEach(c => {
+                    if (filtroUnid !== "todas" && c.unidade !== filtroUnid && !(["Shopee", "Nuvemshop"].includes(filtroUnid) && c.unidade === "Geral / E-commerce")) return;
+                    
+                    const partes = c.venc.split('-');
+                    if (partes.length === 3) {
+                        const mesAno = `${partes[1]}/${partes[0]}`;
+                        if (!meses[mesAno]) meses[mesAno] = { faturamento: 0, custoProd: 0, despesas: 0 };
+                        meses[mesAno].despesas += c.valor;
+                    }
+                });
+
+                // Converter para array e ordenar (Mês mais recente primeiro)
+                const dreOrdenado = Object.keys(meses).sort((a, b) => {
+                    const [mA, yA] = a.split('/');
+                    const [mB, yB] = b.split('/');
+                    return new Date(yB, mB - 1) - new Date(yA, mA - 1);
+                });
+
+                if (dreOrdenado.length > 0) {
+                    elDRE.innerHTML = dreOrdenado.map(mes => {
+                        const d = meses[mes];
+                        const resultado = d.faturamento - d.custoProd - d.despesas;
+                        let corResultado = resultado >= 0 ? 'text-emerald-600 bg-emerald-50/50' : 'text-rose-600 bg-rose-50/50';
+                        
+                        // Formatar o nome do mês
+                        const [m, y] = mes.split('/');
+                        const nomeMes = new Date(y, m - 1).toLocaleString('pt-BR', { month: 'short' }).toUpperCase();
+                        
+                        return `<tr>
+                                    <td class="p-3 font-bold text-slate-700">${nomeMes}/${y}</td>
+                                    <td class="p-3 text-right font-medium text-emerald-600">${formatBRL(d.faturamento)}</td>
+                                    <td class="p-3 text-right text-slate-500">${formatBRL(d.custoProd)}</td>
+                                    <td class="p-3 text-right text-rose-500">${formatBRL(d.despesas)}</td>
+                                    <td class="p-3 text-right font-black ${corResultado}">${formatBRL(resultado)}</td>
+                                </tr>`;
+                    }).join('');
+                } else {
+                    elDRE.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum dado financeiro registrado.</td></tr>`;
+                }
+            }
+
+            renderCarrinhoPDV(); renderCarrinhoRomaneio();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (!db.produtos) db = defaultData;
+                renderAll();
+            } catch (err) { console.error(err); db = defaultData; renderAll(); }
+        });
+    </script>
+</body>
+</html>
