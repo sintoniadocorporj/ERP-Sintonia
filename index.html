@@ -433,41 +433,41 @@
     <!-- JAVASCRIPT COM INTEGRAÇÃO SUPABASE -->
     <script>
         // Inicializa Supabase
-        const supabaseUrl = 'https://zcgblnoldtvopnxsfzdb.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZ2Jsbm9sZHR2b3BueHNmemRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MTI2NDIsImV4cCI6MjEwOTk4ODY0Mn0.Ri5OiUcid0lrrrj7O7montIX8lbXgate5VHF1OltTks';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = 'https://zcgblnoldtvopnxsfzdb.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZ2Jsbm9sZHR2b3BueHNmemRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MTI2NDIsImV4cCI6MjEwOTk4ODY0Mn0.Ri5OiUcid0lrrrj7O7montIX8lbXgate5VHF1OltTks';
+const clienteSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        window.perfilAtual = 'admin';
-        let db = { fichas: [], produtos: [], ops: [], transferencias: [], vendas: [], contas: [] };
-        let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
+window.perfilAtual = 'admin';
+let db = { fichas: [], produtos: [], ops: [], transferencias: [], vendas: [], contas: [] };
+let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
 
-        // Funções Helpers para Banco de Dados
-        async function dbInsert(t, obj) { try { await supabase.from(t).insert([obj]); } catch(e){console.error(e)} }
-        async function dbUpdate(t, id, obj) { try { await supabase.from(t).update(obj).eq('id', id); } catch(e){console.error(e)} }
-        async function dbDelete(t, id) { try { await supabase.from(t).delete().eq('id', id); } catch(e){console.error(e)} }
-        async function syncEstoque(p) { try { await dbUpdate('produtos', p.id, { estConfeccao: p.estConfeccao, estTijuca: p.estTijuca, estSaoCristovao: p.estSaoCristovao, estShopee: p.estShopee }); } catch(e){console.error(e)} }
+// Funções Helpers para Banco de Dados
+async function dbInsert(t, obj) { try { await clienteSupabase.from(t).insert([obj]); } catch(e){console.error(e)} }
+async function dbUpdate(t, id, obj) { try { await clienteSupabase.from(t).update(obj).eq('id', id); } catch(e){console.error(e)} }
+async function dbDelete(t, id) { try { await clienteSupabase.from(t).delete().eq('id', id); } catch(e){console.error(e)} }
+async function syncEstoque(p) { try { await dbUpdate('produtos', p.id, { estConfeccao: p.estConfeccao, estTijuca: p.estTijuca, estSaoCristovao: p.estSaoCristovao, estShopee: p.estShopee }); } catch(e){console.error(e)} }
 
-        // Carregamento Inicial
-        async function carregarBancoDeDados() {
-            try {
-                document.getElementById('status-nuvem').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
-                const [f, p, v, o, t, c] = await Promise.all([
-                    supabase.from('fichas').select('*').order('id', {ascending: false}),
-                    supabase.from('produtos').select('*').order('id', {ascending: false}),
-                    supabase.from('vendas').select('*').order('id', {ascending: false}),
-                    supabase.from('ops').select('*').order('id', {ascending: false}),
-                    supabase.from('transferencias').select('*').order('id', {ascending: false}),
-                    supabase.from('contas').select('*').order('id', {ascending: false})
-                ]);
-                db.fichas = f.data || []; db.produtos = p.data || []; db.vendas = v.data || [];
-                db.ops = o.data || []; db.transferencias = t.data || []; db.contas = c.data || [];
-                document.getElementById('status-nuvem').innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> Online e Sincronizado';
-                renderAll();
-            } catch(e) {
-                console.error(e);
-                document.getElementById('status-nuvem').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Erro de Conexão';
-            }
-        }
+// Carregamento Inicial
+async function carregarBancoDeDados() {
+    try {
+        document.getElementById('status-nuvem').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
+        const [f, p, v, o, t, c] = await Promise.all([
+            clienteSupabase.from('fichas').select('*').order('id', {ascending: false}),
+            clienteSupabase.from('produtos').select('*').order('id', {ascending: false}),
+            clienteSupabase.from('vendas').select('*').order('id', {ascending: false}),
+            clienteSupabase.from('ops').select('*').order('id', {ascending: false}),
+            clienteSupabase.from('transferencias').select('*').order('id', {ascending: false}),
+            clienteSupabase.from('contas').select('*').order('id', {ascending: false})
+        ]);
+        db.fichas = f.data || []; db.produtos = p.data || []; db.vendas = v.data || [];
+        db.ops = o.data || []; db.transferencias = t.data || []; db.contas = c.data || [];
+        document.getElementById('status-nuvem').innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> Online e Sincronizado';
+        renderAll();
+    } catch(e) {
+        console.error(e);
+        document.getElementById('status-nuvem').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Erro de Conexão';
+    }
+}
 
         window.addEventListener('DOMContentLoaded', () => { carregarBancoDeDados(); });
 
