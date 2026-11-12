@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sintonia do Corpo - PDV Ágil</title>
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#db2777">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -692,5 +694,9 @@
             renderCarrinhoPDV(); renderCarrinhoRomaneio();
         }
     </script>
-</body>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+</script></body>
 </html>
