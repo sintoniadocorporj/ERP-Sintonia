@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sintonia do Corpo - App Mobile & PDV</title>
+    <title>Sintonia do Corpo - PDV Ágil</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -25,31 +25,24 @@
             .no-print { display: none !important; }
         }
     </style>
+    <!-- ESTILO DE RESTRIÇÃO: Esconde áreas gerenciais por padrão -->
+    <style id="style-restricao">
+        .admin-only { display: none !important; }
+        .th-lucro, .th-fabrica { display: none !important; }
+    </style>
 </head>
 <body class="min-h-screen flex flex-col md:flex-row text-slate-800">
 
-    <!-- TELA DE LOGIN SEGURA -->
-    <div id="modal-login" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 space-y-6 shadow-2xl text-center">
-            <div class="w-16 h-16 rounded-2xl bg-pink-600 mx-auto flex items-center justify-center font-bold text-3xl text-white shadow-lg mb-2">S</div>
-            <div>
-                <h2 class="text-2xl font-bold text-slate-900">Sintonia do Corpo</h2>
-                <p class="text-sm text-slate-500 mt-1">Aplicação Mobile & ERP</p>
-                <p id="status-login" class="text-xs font-bold text-slate-400 mt-2">Por favor, faça login</p>
-            </div>
-            
-            <div class="space-y-4 pt-4 text-left">
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">E-mail</label>
-                    <input type="email" id="login-email" placeholder="ex: admin@sintonia.com" class="w-full mt-1 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:border-pink-500 focus:ring focus:ring-pink-200 outline-none">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 uppercase">Senha</label>
-                    <input type="password" id="login-senha" placeholder="••••••••" class="w-full mt-1 border border-slate-300 rounded-xl px-4 py-3 text-sm font-bold focus:border-pink-500 focus:ring focus:ring-pink-200 outline-none">
-                </div>
-                <button onclick="fazerLogin()" id="btn-login" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl px-4 py-4 text-sm transition shadow-lg mt-2 flex justify-center items-center gap-2">
-                    <i class="fa-solid fa-right-to-bracket"></i> Acessar Sistema
-                </button>
+    <!-- MODAL DE SENHA GERENCIAL -->
+    <div id="modal-senha-admin" class="fixed inset-0 bg-slate-900/80 z-[100] hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-8 space-y-5 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-xl bg-slate-900 mx-auto flex items-center justify-center text-white shadow-lg mb-2"><i class="fa-solid fa-lock text-xl"></i></div>
+            <h2 class="text-xl font-bold text-slate-900">Acesso Gerencial</h2>
+            <p class="text-sm text-slate-500">Digite a senha para desbloquear as funções de gestão financeira e fábrica.</p>
+            <input type="password" id="input-senha-admin" placeholder="••••••••" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-center text-lg font-bold focus:border-pink-500 outline-none" onkeypress="if(event.key === 'Enter') validarSenhaAdmin()">
+            <div class="flex gap-2 pt-2">
+                <button onclick="fecharModalAdmin()" class="w-1/3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl px-4 py-3 text-sm transition">Voltar</button>
+                <button onclick="validarSenhaAdmin()" class="w-2/3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl px-4 py-3 text-sm transition">Desbloquear</button>
             </div>
         </div>
     </div>
@@ -61,43 +54,51 @@
                 <div class="w-10 h-10 rounded-xl bg-pink-600 flex items-center justify-center font-bold text-xl shadow-lg">S</div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight">Sintonia App</h1>
-                    <p id="usuario-logado" class="text-xs text-emerald-400 font-medium"><i class="fa-solid fa-mobile-screen text-[10px]"></i> Modo Mobile Ativo</p>
+                    <p id="usuario-logado" class="text-xs text-amber-400 font-medium"><i class="fa-solid fa-lock text-[10px]"></i> PDV Bloqueado</p>
                 </div>
             </div>
 
             <nav class="p-4 space-y-1">
-                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-2">Visão Estratégica</p>
-                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-btn admin-only active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-2 admin-only">Visão Estratégica</p>
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
                     <i class="fa-solid fa-chart-pie w-5 text-center"></i> 1. Painel & Resultados
                 </button>
-                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-6">Cadeia de Produção</p>
+                
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-6 admin-only">Cadeia de Produção</p>
                 <button onclick="switchTab('precificacao')" id="btn-precificacao" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
                     <i class="fa-solid fa-calculator w-5 text-center"></i> 2. Ficha de Custos
                 </button>
-                <button onclick="switchTab('produtos')" id="btn-produtos" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
-                    <i class="fa-solid fa-tags w-5 text-center"></i> 3. Catálogo & Estoque
-                </button>
                 <button onclick="switchTab('confeccao')" id="btn-confeccao" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
-                    <i class="fa-solid fa-scissors w-5 text-center"></i> 4. Confecção (OPs)
+                    <i class="fa-solid fa-scissors w-5 text-center"></i> 3. Confecção (OPs)
                 </button>
                 <button onclick="switchTab('transferencia')" id="btn-transferencia" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
-                    <i class="fa-solid fa-truck-fast w-5 text-center"></i> 5. Distribuição (Lojas)
+                    <i class="fa-solid fa-truck-fast w-5 text-center"></i> 4. Distribuição (Lojas)
                 </button>
+
                 <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 ml-2 mt-6">Ponta de Venda</p>
-                <button onclick="switchTab('vendas')" id="btn-vendas" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
-                    <i class="fa-solid fa-cash-register w-5 text-center"></i> 6. Vendas (PDV)
+                <button onclick="switchTab('vendas')" id="btn-vendas" class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-cash-register w-5 text-center"></i> Vendas (PDV)
                 </button>
-                <button onclick="switchTab('financeiro')" id="btn-financeiro" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
-                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> 7. Contas & Caixa
+                <button onclick="switchTab('produtos')" id="btn-produtos" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800">
+                    <i class="fa-solid fa-tags w-5 text-center"></i> Catálogo & Estoque
+                </button>
+                
+                <button onclick="switchTab('financeiro')" id="btn-financeiro" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 mt-2">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Contas & Caixa
                 </button>
             </nav>
         </div>
         <div class="p-4 border-t border-slate-800 space-y-2">
-            <button onclick="carregarBancoDeDados()" class="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg flex items-center justify-center gap-2 transition">
+            <button onclick="carregarBancoDeDados()" class="w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg flex items-center justify-center gap-2 transition text-slate-300">
                 <i class="fa-solid fa-arrows-rotate"></i> Sincronizar Nuvem
             </button>
-            <button onclick="fazerLogout()" class="w-full py-2 px-3 bg-rose-900/50 hover:bg-rose-800 text-rose-200 text-xs rounded-lg flex items-center justify-center gap-2 transition">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair (Logout)
+            
+            <!-- Botões de Troca de Perfil -->
+            <button id="btn-desbloqueio" onclick="abrirModalAdmin()" class="w-full py-3 px-3 bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition shadow-lg mt-2">
+                <i class="fa-solid fa-unlock-keyhole"></i> Acesso Gerencial
+            </button>
+            <button id="btn-bloqueio" onclick="bloquearAdmin()" class="w-full py-3 px-3 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-lg items-center justify-center gap-2 transition shadow-lg mt-2 hidden flex">
+                <i class="fa-solid fa-lock"></i> Bloquear Sistema (PDV)
             </button>
         </div>
     </aside>
@@ -106,7 +107,7 @@
     <main class="flex-1 p-5 md:p-8 overflow-y-auto no-print">
         
         <!-- DASHBOARD -->
-        <section id="tab-dashboard" class="tab-content active space-y-6">
+        <section id="tab-dashboard" class="tab-content space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-900">Painel Geral, Fechamento & Comissões</h2>
@@ -255,7 +256,7 @@
                 <div><h2 class="text-2xl font-bold text-slate-900">Catálogo e Saldo de Estoque</h2></div>
                 <div class="flex items-center gap-3"><input type="text" id="filtro-busca-catalogo" onkeyup="filtrarCatalogo()" placeholder="Buscar peça por nome, cor ou SKU..." class="border border-slate-300 rounded-xl px-3 py-2 text-sm w-full md:w-72 shadow-sm"></div>
             </div>
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 admin-only">
                 <h3 class="font-semibold text-slate-800 mb-4" id="titulo-form-catalogo">Cadastrar Variações no Catálogo</h3>
                 <form onsubmit="addProduto(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3">
                     <input type="text" id="prod-nome" placeholder="Modelo (ex: Top Beatriz)" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm md:col-span-2 bg-slate-50">
@@ -327,7 +328,7 @@
         </section>
 
         <!-- 6. VENDAS PDV (COM LEITOR DE CÂMARA E LEITOR ÓTICO TRADICIONAL) -->
-        <section id="tab-vendas" class="tab-content space-y-6">
+        <section id="tab-vendas" class="tab-content active space-y-6">
             <div><h2 class="text-2xl font-bold text-slate-900">PDV de Vendas</h2></div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
@@ -373,7 +374,7 @@
                             <div><label class="text-xs font-semibold text-slate-500">Atendente</label><input type="text" id="pdv-vendedora" placeholder="Ex: Ana" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white"></div>
                         </div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between pt-2 border-t border-slate-200 gap-3">
-                            <div><span class="text-xs text-slate-500 block">A Cobrar do Cliente:</span><span id="pdv-total-final" class="text-2xl font-bold text-emerald-600">R$ 0,00</span><span id="pdv-lucro-previsto" class="text-xs text-blue-600 font-semibold ml-2 text-opacity-50"></span></div>
+                            <div><span class="text-xs text-slate-500 block">A Cobrar do Cliente:</span><span id="pdv-total-final" class="text-2xl font-bold text-emerald-600">R$ 0,00</span><span id="pdv-lucro-previsto" class="text-xs text-blue-600 font-semibold ml-2 text-opacity-50 admin-only"></span></div>
                             <button type="button" onclick="finalizarVendaPDV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl px-6 py-3 text-sm transition shadow-sm"><i class="fa-solid fa-check mr-1"></i> Receber e Fechar</button>
                         </div>
                     </div>
@@ -444,16 +445,60 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT COM SUPABASE, LOGIN E DUPLO LEITOR (USB + CÂMARA) -->
+    <!-- JAVASCRIPT COM SUPABASE ABERTO E DUPLO LEITOR -->
     <script>
         const supabaseUrl = 'https://zcgblnoldtvopnxsfzdb.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZ2Jsbm9sZHR2b3BueHNmemRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MTI2NDIsImV4cCI6MjEwOTk4ODY0Mn0.Ri5OiUcid0lrrrj7O7montIX8lbXgate5VHF1OltTks';
         const clienteSupabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        window.perfilAtual = 'admin';
+        window.perfilAtual = 'loja';
+        const SENHA_ADMIN = 'sintonia2026';
         let db = { fichas: [], produtos: [], ops: [], transferencias: [], vendas: [], contas: [] };
         let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
         let html5QrCodeScanner = null;
+
+        // Arrancar sistema imediatamente sem login
+        window.addEventListener('DOMContentLoaded', () => {
+            carregarBancoDeDados();
+        });
+
+        // Lógica do Modal de Senha Gerencial
+        function abrirModalAdmin() {
+            document.getElementById('modal-senha-admin').classList.remove('hidden');
+            document.getElementById('modal-senha-admin').classList.add('flex');
+            document.getElementById('input-senha-admin').focus();
+        }
+        function fecharModalAdmin() {
+            document.getElementById('modal-senha-admin').classList.add('hidden');
+            document.getElementById('modal-senha-admin').classList.remove('flex');
+            document.getElementById('input-senha-admin').value = '';
+        }
+        function validarSenhaAdmin() {
+            const input = document.getElementById('input-senha-admin').value;
+            if(input === SENHA_ADMIN) {
+                fecharModalAdmin();
+                const styleRestricao = document.getElementById('style-restricao');
+                if(styleRestricao) styleRestricao.disabled = true; // Desliga a restrição visual
+                
+                window.perfilAtual = 'admin';
+                document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-unlock text-[10px]"></i> Modo Gestão Ativo`;
+                document.getElementById('btn-desbloqueio').classList.add('hidden');
+                document.getElementById('btn-bloqueio').classList.remove('hidden');
+                switchTab('dashboard');
+            } else {
+                alert("Senha gerencial incorreta!");
+            }
+        }
+        function bloquearAdmin() {
+            const styleRestricao = document.getElementById('style-restricao');
+            if(styleRestricao) styleRestricao.disabled = false; // Religa a restrição visual
+            
+            window.perfilAtual = 'loja';
+            document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> PDV Bloqueado`;
+            document.getElementById('btn-bloqueio').classList.add('hidden');
+            document.getElementById('btn-desbloqueio').classList.remove('hidden');
+            switchTab('vendas');
+        }
 
         // Leitor por Câmara (Mobile)
         function abrirLeitorCamera() {
@@ -485,49 +530,6 @@
             } else {
                 document.getElementById('reader-container').classList.add('hidden');
             }
-        }
-
-        // Autenticação e Login
-        window.addEventListener('DOMContentLoaded', async () => {
-            const { data: { session } } = await clienteSupabase.auth.getSession();
-            if (session) {
-                document.getElementById('modal-login').style.display = 'none';
-                document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-user text-[10px]"></i> ${session.user.email}`;
-                if (session.user.email.includes('pdv')) { aplicarVisualLoja(); } else { switchTab('dashboard'); }
-                carregarBancoDeDados();
-            }
-        });
-
-        async function fazerLogin() {
-            const email = document.getElementById('login-email').value.trim();
-            const senha = document.getElementById('login-senha').value;
-            if(!email || !senha) return alert("Preencha email e senha.");
-            
-            document.getElementById('btn-login').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
-            
-            const { data, error } = await clienteSupabase.auth.signInWithPassword({ email, password: senha });
-            if (error) {
-                document.getElementById('status-login').innerHTML = `<span class="text-rose-500">Erro: ${error.message}</span>`;
-                document.getElementById('btn-login').innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Acessar Sistema';
-                return;
-            }
-            
-            document.getElementById('modal-login').style.display = 'none';
-            document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-user text-[10px]"></i> ${email}`;
-            
-            if (email.includes('pdv')) { aplicarVisualLoja(); } else { switchTab('dashboard'); }
-            carregarBancoDeDados();
-        }
-
-        async function fazerLogout() {
-            await clienteSupabase.auth.signOut();
-            window.location.reload();
-        }
-
-        function aplicarVisualLoja() {
-            window.perfilAtual = 'loja';
-            const style = document.createElement('style'); style.innerHTML = `.admin-only { display: none !important; } .th-lucro, .th-fabrica { display: none !important; }`;
-            document.head.appendChild(style); document.getElementById('th-preco-dinamico').innerText = 'Preço Final'; switchTab('vendas');
         }
 
         // Funções Helpers para Banco de Dados
@@ -661,7 +663,7 @@
             document.getElementById('tabela-produtos').innerHTML = db.produtos.map(p=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td><td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td><td class="p-3"><span class="text-slate-500 font-medium">${formatBRL(p.custo)}</span><br><span class="font-bold">${formatBRL(p.preco)}</span></td><td class="p-3 font-bold text-emerald-600">${formatBRL(p.preco-p.custo)}</td><td class="p-3 text-center bg-amber-50/30 text-amber-900 font-bold">${p.estConfeccao}</td><td class="p-3 text-center bg-blue-50/30 text-blue-900 font-bold">${p.estTijuca}</td><td class="p-3 text-center bg-purple-50/30 text-purple-900 font-bold">${p.estSaoCristovao}</td><td class="p-3 text-center bg-orange-50/30 text-orange-900 font-bold">${p.estShopee||0}</td><td class="p-3 text-center font-bold">${p.estConfeccao+p.estTijuca+p.estSaoCristovao+(p.estShopee||0)}</td><td class="p-3 text-right flex flex-col gap-2"><button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500"><i class="fa-solid fa-pen"></i></button><button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500"><i class="fa-solid fa-barcode"></i></button><button onclick="excluirProduto(${p.id})" class="text-slate-300"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             document.getElementById('tabela-ops').innerHTML = db.ops.map(o=>{ const p = db.produtos.find(x=>x.id===o.prodId); return `<tr><td class="p-4 font-bold text-xs">#OP-${o.id}</td><td class="p-4 text-xs">${o.data}</td><td class="p-4 font-medium">${p?p.nome:'Removido'}</td><td class="p-4 font-bold">${o.qtd}</td><td class="p-4 text-xs">${o.obs}</td><td class="p-4"><span class="badge bg-slate-100">${o.status}</span></td><td class="p-4 text-right">${o.status!=="Finalizado"?`<button onclick="avancarOP(${o.id})" class="badge bg-slate-800 text-white">Avançar ➡</button>`:`<span class="badge bg-emerald-100 text-emerald-800">No Estoque</span>`} <button onclick="excluirOP(${o.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('');
             document.getElementById('tabela-transferencias').innerHTML = db.transferencias.map(t=>`<tr><td class="p-4 font-bold text-xs">#ROM-${t.id}</td><td class="p-4 text-xs">${t.data}</td><td class="p-4 font-bold text-indigo-700">${t.destino}</td><td class="p-4 text-xs max-w-xs truncate">${t.itens.map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4 text-center font-bold">${t.totalPecas}</td><td class="p-4 text-right"><button onclick="verRomaneioImpressao(${t.id})" class="badge bg-indigo-100 text-indigo-800 mr-2">Ver PDF</button><button onclick="excluirRomaneio(${t.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
-            document.getElementById('tabela-vendas').innerHTML = db.vendas.map(v=>`<tr><td class="p-4 text-xs"><span class="font-bold">#${v.id}</span><br>${v.data}</td><td class="p-4 font-semibold text-xs">${v.canal}<br><span class="font-normal text-slate-400">${v.vendedora}</span></td><td class="p-4 text-xs max-w-xs truncate">${(v.itens||[]).map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4"><span class="badge bg-slate-100">${v.pgto}</span></td><td class="p-4 text-slate-500">${formatBRL(v.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(v.valor)}</td><td class="p-4"><span class="font-bold text-blue-600">${formatBRL(v.valor-(v.custoTotal||0))}</span> <span class="text-xs text-slate-400">(${(v.valor>0?((v.valor-(v.custoTotal||0))/v.valor)*100:0).toFixed(0)}%)</span></td><td class="p-4 text-right"><button onclick="verReciboVenda(${v.id})" class="text-slate-500 mr-2"><i class="fa-solid fa-receipt"></i></button><button onclick="excluirVenda(${v.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            document.getElementById('tabela-vendas').innerHTML = db.vendas.map(v=>`<tr><td class="p-4 text-xs"><span class="font-bold">#${v.id}</span><br>${v.data}</td><td class="p-4 font-semibold text-xs">${v.canal}<br><span class="font-normal text-slate-400">${v.vendedora}</span></td><td class="p-4 text-xs max-w-xs truncate">${(v.itens||[]).map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4"><span class="badge bg-slate-100">${v.pgto}</span></td><td class="p-4 text-slate-500 admin-only">${formatBRL(v.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(v.valor)}</td><td class="p-4 admin-only"><span class="font-bold text-blue-600">${formatBRL(v.valor-(v.custoTotal||0))}</span> <span class="text-xs text-slate-400">(${(v.valor>0?((v.valor-(v.custoTotal||0))/v.valor)*100:0).toFixed(0)}%)</span></td><td class="p-4 text-right"><button onclick="verReciboVenda(${v.id})" class="text-slate-500 mr-2"><i class="fa-solid fa-receipt"></i></button><button onclick="excluirVenda(${v.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             document.getElementById('tabela-contas').innerHTML = db.contas.map(c=>`<tr><td class="p-4 text-xs">${c.venc.split('-').reverse().join('/')}</td><td class="p-4 font-medium">${c.desc}</td><td class="p-4 text-xs">${c.cat}</td><td class="p-4 text-xs"><span class="badge bg-slate-100">${c.unidade}</span></td><td class="p-4 font-bold ${c.status==="Pago"?'text-slate-400 line-through':'text-rose-600'}">${formatBRL(c.valor)}</td><td class="p-4"><span class="badge ${c.status==="Pago"?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">${c.status}</span></td><td class="p-4 text-right"><button onclick="alternarStatusConta(${c.id})" class="badge bg-slate-800 text-white mr-2">${c.status==="Pago"?'Desfazer':'Pagar'}</button><button onclick="excluirConta(${c.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
 
             // DASHBOARD
