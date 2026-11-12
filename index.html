@@ -456,12 +456,10 @@
         let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
         let html5QrCodeScanner = null;
 
-        // Arrancar sistema imediatamente sem login
         window.addEventListener('DOMContentLoaded', () => {
             carregarBancoDeDados();
         });
 
-        // Lógica do Modal de Senha Gerencial
         function abrirModalAdmin() {
             document.getElementById('modal-senha-admin').classList.remove('hidden');
             document.getElementById('modal-senha-admin').classList.add('flex');
@@ -477,8 +475,7 @@
             if(input === SENHA_ADMIN) {
                 fecharModalAdmin();
                 const styleRestricao = document.getElementById('style-restricao');
-                if(styleRestricao) styleRestricao.disabled = true; // Desliga a restrição visual
-                
+                if(styleRestricao) styleRestricao.disabled = true; 
                 window.perfilAtual = 'admin';
                 document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-unlock text-[10px]"></i> Modo Gestão Ativo`;
                 document.getElementById('btn-desbloqueio').classList.add('hidden');
@@ -490,8 +487,7 @@
         }
         function bloquearAdmin() {
             const styleRestricao = document.getElementById('style-restricao');
-            if(styleRestricao) styleRestricao.disabled = false; // Religa a restrição visual
-            
+            if(styleRestricao) styleRestricao.disabled = false;
             window.perfilAtual = 'loja';
             document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> PDV Bloqueado`;
             document.getElementById('btn-bloqueio').classList.add('hidden');
@@ -499,62 +495,32 @@
             switchTab('vendas');
         }
 
-        // Leitor por Câmara (Mobile)
         function abrirLeitorCamera() {
             document.getElementById('reader-container').classList.remove('hidden');
-            if (!html5QrCodeScanner) {
-                html5QrCodeScanner = new Html5Qrcode("reader");
-            }
+            if (!html5QrCodeScanner) { html5QrCodeScanner = new Html5Qrcode("reader"); }
             html5QrCodeScanner.start(
                 { facingMode: "environment" }, 
                 { fps: 10, qrbox: { width: 250, height: 100 } },
-                (decodedText) => {
-                    document.getElementById('pdv-produto-busca').value = decodedText.trim().toUpperCase();
-                    addItemPDV();
-                    fecharLeitorCamera();
-                },
+                (decodedText) => { document.getElementById('pdv-produto-busca').value = decodedText.trim().toUpperCase(); addItemPDV(); fecharLeitorCamera(); },
                 (errorMessage) => {}
-            ).catch((err) => {
-                alert("Erro ao aceder à câmara: " + err);
-            });
+            ).catch((err) => { alert("Erro ao aceder à câmara: " + err); });
         }
 
         function fecharLeitorCamera() {
-            if (html5QrCodeScanner) {
-                html5QrCodeScanner.stop().then(() => {
-                    document.getElementById('reader-container').classList.add('hidden');
-                }).catch(err => {
-                    document.getElementById('reader-container').classList.add('hidden');
-                });
-            } else {
-                document.getElementById('reader-container').classList.add('hidden');
-            }
+            if (html5QrCodeScanner) { html5QrCodeScanner.stop().then(() => { document.getElementById('reader-container').classList.add('hidden'); }).catch(err => { document.getElementById('reader-container').classList.add('hidden'); }); } 
+            else { document.getElementById('reader-container').classList.add('hidden'); }
         }
 
-        // Funções Helpers para Banco de Dados
         async function dbInsert(t, obj) { try { await clienteSupabase.from(t).insert([obj]); } catch(e){console.error(e)} }
         async function dbUpdate(t, id, obj) { try { await clienteSupabase.from(t).update(obj).eq('id', id); } catch(e){console.error(e)} }
         async function dbDelete(t, id) { try { await clienteSupabase.from(t).delete().eq('id', id); } catch(e){console.error(e)} }
         async function syncEstoque(p) { try { await dbUpdate('produtos', p.id, { estConfeccao: p.estConfeccao, estTijuca: p.estTijuca, estSaoCristovao: p.estSaoCristovao, estShopee: p.estShopee }); } catch(e){console.error(e)} }
 
-        // Carregamento Inicial
         async function carregarBancoDeDados() {
             try {
-                const [f, p, v, o, t, c] = await Promise.all([
-                    clienteSupabase.from('fichas').select('*').order('id', {ascending: false}),
-                    clienteSupabase.from('produtos').select('*').order('id', {ascending: false}),
-                    clienteSupabase.from('vendas').select('*').order('id', {ascending: false}),
-                    clienteSupabase.from('ops').select('*').order('id', {ascending: false}),
-                    clienteSupabase.from('transferencias').select('*').order('id', {ascending: false}),
-                    clienteSupabase.from('contas').select('*').order('id', {ascending: false})
-                ]);
-                db.fichas = f.data || []; db.produtos = p.data || []; db.vendas = v.data || [];
-                db.ops = o.data || []; db.transferencias = t.data || []; db.contas = c.data || [];
-                renderAll();
-            } catch(e) {
-                console.error(e);
-                alert("Erro de Conexão com a Base de Dados Segura.");
-            }
+                const [f, p, v, o, t, c] = await Promise.all([ clienteSupabase.from('fichas').select('*').order('id', {ascending: false}), clienteSupabase.from('produtos').select('*').order('id', {ascending: false}), clienteSupabase.from('vendas').select('*').order('id', {ascending: false}), clienteSupabase.from('ops').select('*').order('id', {ascending: false}), clienteSupabase.from('transferencias').select('*').order('id', {ascending: false}), clienteSupabase.from('contas').select('*').order('id', {ascending: false}) ]);
+                db.fichas = f.data || []; db.produtos = p.data || []; db.vendas = v.data || []; db.ops = o.data || []; db.transferencias = t.data || []; db.contas = c.data || []; renderAll();
+            } catch(e) { console.error(e); alert("Erro de Conexão com a Base de Dados Segura."); }
         }
 
         function formatBRL(v) { return (Number(v) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
@@ -562,7 +528,6 @@
         function parseBrDate(s) { if(!s) return new Date(0); const p = s.split('/'); if(p.length===3) return new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`); return new Date(s); }
         function padZero(n) { return (n < 10 ? '0' : '') + n; }
 
-        // MÓDULO: Fichas
         function simularFichaCusto() {
             const pt = parseFloat(document.getElementById('ficha-tecido-preco').value)||0, ct = parseFloat(document.getElementById('ficha-tecido-cons').value)||0;
             const extra = (parseFloat(document.getElementById('ficha-aviamento').value)||0) + (parseFloat(document.getElementById('ficha-embalagem').value)||0);
@@ -575,13 +540,11 @@
             const nome = document.getElementById('ficha-nome').value.trim(); if(!nome) return alert("Dê um nome");
             const tec = document.getElementById('ficha-tecido-nome').value, calc = (parseFloat(document.getElementById('ficha-tecido-preco').value)||0)*(parseFloat(document.getElementById('ficha-tecido-cons').value)||0), ex = (parseFloat(document.getElementById('ficha-aviamento').value)||0)+(parseFloat(document.getElementById('ficha-embalagem').value)||0), fac = parseFloat(document.getElementById('ficha-costura').value)||0, pv = parseFloat(document.getElementById('ficha-preco').value)||0;
             const nFicha = { id: Date.now(), nome, tecido: tec, "custoTecido": calc, "custoAviamento": ex, "custoFaccao": fac, "custoTotal": calc+ex+fac, "precoVenda": pv, data: new Date().toLocaleDateString('pt-BR') };
-            db.fichas.unshift(nFicha); document.getElementById('ficha-nome').value = ''; document.getElementById('ficha-preco').value = ''; simularFichaCusto(); renderAll();
-            await dbInsert('fichas', nFicha);
+            db.fichas.unshift(nFicha); document.getElementById('ficha-nome').value = ''; document.getElementById('ficha-preco').value = ''; simularFichaCusto(); renderAll(); await dbInsert('fichas', nFicha);
         }
         async function excluirFicha(id) { if(!confirm("Excluir?")) return; db.fichas = db.fichas.filter(f => f.id !== id); renderAll(); await dbDelete('fichas', id); }
         function gerarProdutoDaFicha(id) { const f = db.fichas.find(x => x.id===id); if(!f) return; document.getElementById('prod-nome').value = f.nome; document.getElementById('prod-custo').value = f.custoTotal.toFixed(2); document.getElementById('prod-preco').value = f.precoVenda.toFixed(2); switchTab('produtos'); }
 
-        // MÓDULO: Produtos
         function gerarSKU(n, t, c, tm) { return `${n.replace(/[^a-zA-Z]/g,'').substring(0,3).toUpperCase()}-${t.substring(0,3).toUpperCase()}-${c.replace(/[^a-zA-Z]/g,'').substring(0,3).toUpperCase()}-${tm.toUpperCase()}`; }
         async function addProduto(e) {
             e.preventDefault(); const n = document.getElementById('prod-nome').value.trim(), t = document.getElementById('prod-tecido').value, c = document.getElementById('prod-cor').value.trim(), ts = document.getElementById('prod-tam').value, cu = parseFloat(document.getElementById('prod-custo').value)||0, pr = parseFloat(document.getElementById('prod-preco').value)||0;
@@ -598,78 +561,91 @@
         async function excluirProduto(id) { if(confirm("Excluir produto?")){ db.produtos = db.produtos.filter(p=>p.id!==id); renderAll(); await dbDelete('produtos', id); } }
         function filtrarCatalogo() { const trm = document.getElementById('filtro-busca-catalogo').value.toLowerCase(); document.querySelectorAll('#tabela-produtos tr').forEach(tr => tr.style.display = tr.innerText.toLowerCase().includes(trm) ? '' : 'none'); }
 
-        // MÓDULO: Confecção (OPs)
         async function addOP(e) { e.preventDefault(); const p = parseInt(document.getElementById('op-produto').value), q = parseInt(document.getElementById('op-qtd').value), ob = document.getElementById('op-obs').value||"Interno"; const nop = { id: Date.now(), data: new Date().toLocaleDateString('pt-BR'), prodId: p, qtd: q, obs: ob, status: "Corte" }; db.ops.unshift(nop); e.target.reset(); renderAll(); await dbInsert('ops', nop); }
         async function avancarOP(id) { const o = db.ops.find(x=>x.id===id); if(o){ const f=["Corte","Costura","Acabamento","Finalizado"]; const i = f.indexOf(o.status); if(i < f.length-1){ o.status = f[i+1]; let pp=null; if(o.status==="Finalizado"){ const p = db.produtos.find(x=>x.id===o.prodId); if(p){ p.estConfeccao+=o.qtd; pp=p; } } renderAll(); await dbUpdate('ops', id, {status: o.status}); if(pp) await syncEstoque(pp); } } }
         async function excluirOP(id) { const o = db.ops.find(x=>x.id===id); if(o && confirm("Excluir OP?")){ let pp=null; if(o.status==="Finalizado"){ const p=db.produtos.find(x=>x.id===o.prodId); if(p){ p.estConfeccao=Math.max(0,p.estConfeccao-o.qtd); pp=p; } } db.ops=db.ops.filter(x=>x.id!==id); renderAll(); await dbDelete('ops', id); if(pp) await syncEstoque(pp); } }
 
-        // MÓDULO: Romaneio
         function addItemRomaneio() { const b = document.getElementById('rom-produto-busca').value; const p = db.produtos.find(x=>x.sku===b.split(' | ')[0].trim()); const q = parseInt(document.getElementById('rom-qtd').value)||1; if(!p) return alert("Peça não encontrada!"); const cur = carrinhoRomaneio.find(i=>i.prodId===p.id); if(p.estConfeccao < ((cur?cur.qtd:0)+q)) return alert("Saldo Fábrica insuficiente!"); if(cur) cur.qtd+=q; else carrinhoRomaneio.push({prodId:p.id, sku:p.sku, nome:`${p.nome} (${p.cor} - ${p.tam})`, qtd:q}); document.getElementById('rom-qtd').value=1; document.getElementById('rom-produto-busca').value=''; renderCarrinhoRomaneio(); }
         function removerItemRomaneio(i) { carrinhoRomaneio.splice(i,1); renderCarrinhoRomaneio(); }
         function limparCarrinhoRomaneio() { carrinhoRomaneio=[]; renderCarrinhoRomaneio(); }
         async function finalizarRomaneio() { if(!carrinhoRomaneio.length) return; const dst = document.getElementById('rom-destino').value; let mods=[]; carrinhoRomaneio.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ p.estConfeccao-=i.qtd; if(dst==="Loja Tijuca") p.estTijuca+=i.qtd; else if(dst==="Loja São Cristóvão") p.estSaoCristovao+=i.qtd; else if(dst==="Estoque Shopee") p.estShopee+=i.qtd; mods.push(p); } }); const rom = {id:Date.now(), data:new Date().toLocaleString('pt-BR').slice(0,16), destino:dst, itens:[...carrinhoRomaneio], totalPecas:carrinhoRomaneio.reduce((a,b)=>a+b.qtd,0)}; db.transferencias.unshift(rom); carrinhoRomaneio=[]; verRomaneioImpressao(rom.id); renderAll(); await dbInsert('transferencias', rom); for(let mp of mods) await syncEstoque(mp); }
         async function excluirRomaneio(id) { const rom = db.transferencias.find(t=>t.id===id); if(rom && confirm("Estornar Romaneio?")){ let mods=[]; rom.itens.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ p.estConfeccao+=i.qtd; if(rom.destino==="Loja Tijuca") p.estTijuca=Math.max(0,p.estTijuca-i.qtd); else if(rom.destino==="Loja São Cristóvão") p.estSaoCristovao=Math.max(0,p.estSaoCristovao-i.qtd); else if(rom.destino==="Estoque Shopee") p.estShopee=Math.max(0,p.estShopee-i.qtd); mods.push(p); } }); db.transferencias=db.transferencias.filter(t=>t.id!==id); renderAll(); await dbDelete('transferencias', id); for(let mp of mods) await syncEstoque(mp); } }
 
-        // MÓDULO: PDV & Vendas (Compatível com USB e Digitação)
-        function handleBarcodeScan(e) { 
-            if(e.key==='Enter'){ 
-                e.preventDefault(); 
-                const v = e.target.value.trim().toUpperCase(); 
-                e.target.value=''; 
-                if(!v) return; 
-                document.getElementById('pdv-produto-busca').value = v; 
-                addItemPDV(); 
-            } 
-        }
+        function handleBarcodeScan(e) { if(e.key==='Enter'){ e.preventDefault(); const v = e.target.value.trim().toUpperCase(); e.target.value=''; if(!v) return; document.getElementById('pdv-produto-busca').value = v; addItemPDV(); } }
         function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value, p = db.produtos.find(x=>x.sku===b.split(' | ')[0].trim()), q = parseInt(document.getElementById('pdv-qtd').value)||1; if(!p) return alert("Selecione um produto."); let s=0; if(c.includes("Tijuca")||c==="Shopee"||c==="Nuvemshop") s=p.estTijuca; else if(c.includes("São Cristóvão")||c==="Shopee SC") s=p.estSaoCristovao; else if(c==="Estoque Shopee") s=p.estShopee; const it = carrinhoPDV.find(i=>i.prodId===p.id); if(s < ((it?it.qtd:0)+q)) return alert(`Estoque insuficiente! Saldo: ${s}`); if(it) it.qtd+=q; else carrinhoPDV.push({prodId:p.id, sku:p.sku, nome:`${p.nome} (${p.cor}-${p.tam})`, qtd:q, preco:p.preco, custo:p.custo||0}); document.getElementById('pdv-qtd').value=1; document.getElementById('pdv-produto-busca').value=''; renderCarrinhoPDV(); }
         function removerItemPDV(i) { carrinhoPDV.splice(i,1); renderCarrinhoPDV(); }
         async function finalizarVendaPDV() { if(!carrinhoPDV.length) return; const c=document.getElementById('pdv-canal').value, d=parseFloat(document.getElementById('pdv-desconto').value)||0, pg=document.getElementById('pdv-pgto').value, vn=document.getElementById('pdv-vendedora').value||"Balcão", sub=carrinhoPDV.reduce((a,b)=>a+(b.preco*b.qtd),0), ct=carrinhoPDV.reduce((a,b)=>a+(b.custo*b.qtd),0), v=Math.max(0,sub-d); let mods=[]; carrinhoPDV.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ if(c.includes("Tijuca")||c==="Shopee"||c==="Nuvemshop") p.estTijuca-=i.qtd; else if(c.includes("São Cristóvão")||c==="Shopee SC") p.estSaoCristovao-=i.qtd; else if(c==="Estoque Shopee") p.estShopee-=i.qtd; mods.push(p); } }); const nv = {id:Date.now(), data:new Date().toLocaleDateString('pt-BR'), canal:c, vendedora:vn, pgto:pg, desconto:d, valor:v, custoTotal:ct, itens:[...carrinhoPDV]}; db.vendas.unshift(nv); carrinhoPDV=[]; document.getElementById('pdv-desconto').value=0; document.getElementById('pdv-vendedora').value=""; verReciboVenda(nv.id); renderAll(); await dbInsert('vendas', nv); for(let mp of mods) await syncEstoque(mp); }
         async function excluirVenda(id) { const v = db.vendas.find(x=>x.id===id); if(v && confirm("Cancelar Venda?")){ let mods=[]; v.itens.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ if(v.canal.includes("Tijuca")||v.canal==="Shopee"||v.canal==="Nuvemshop") p.estTijuca+=i.qtd; else if(v.canal.includes("São Cristóvão")||v.canal==="Shopee SC") p.estSaoCristovao+=i.qtd; else if(v.canal==="Estoque Shopee") p.estShopee+=i.qtd; mods.push(p); } }); db.vendas=db.vendas.filter(x=>x.id!==id); renderAll(); await dbDelete('vendas', id); for(let mp of mods) await syncEstoque(mp); } }
 
-        // MÓDULO: Financeiro
         async function addConta(e) { e.preventDefault(); const n = {id:Date.now(), venc:document.getElementById('conta-venc').value, "desc":document.getElementById('conta-desc').value, cat:document.getElementById('conta-cat').value, unidade:document.getElementById('conta-unidade').value, valor:parseFloat(document.getElementById('conta-valor').value), status:"Pendente"}; db.contas.push(n); e.target.reset(); renderAll(); await dbInsert('contas', n); }
         async function alternarStatusConta(id) { const c = db.contas.find(x=>x.id===id); if(c){ c.status = c.status==="Pendente"?"Pago":"Pendente"; renderAll(); await dbUpdate('contas', id, {status:c.status}); } }
         async function excluirConta(id) { if(confirm("Excluir lançamento?")){ db.contas = db.contas.filter(c=>c.id!==id); renderAll(); await dbDelete('contas', id); } }
 
-        // MÓDULO: Impressão e Relatórios
         function fecharModalImpressao() { document.getElementById('modal-impressao').classList.add('hidden'); document.getElementById('modal-impressao').classList.remove('flex'); }
         function copiarTextoModal() { navigator.clipboard.writeText(textoCompartilhamento); alert("Copiado!"); }
         
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO CORRIGIDA PARA CÓDIGO DE BARRAS (CANVAS NO LUGAR DE SVG)
+        // FUNÇÃO DEFINITIVA (CÓDIGO DE BARRAS GERADO EM MEMÓRIA E COLADO COMO IMAGEM)
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
             fecharModalQtdEtiquetas(); 
             const p = db.produtos.find(x => x.id === id); 
             if(!p) return; 
+
+            // Proteção: Limpa caracteres inválidos do SKU para evitar erro na biblioteca
+            let codigoValido = (p.sku && p.sku.trim() !== '') ? p.sku.trim() : '000000';
+            codigoValido = codigoValido.replace(/[^a-zA-Z0-9-]/g, '');
+            if(codigoValido === '') codigoValido = '000000';
+
+            // Desenha o código numa "tela invisível" e guarda como ficheiro de imagem
+            let barcodeDataUrl = "";
+            try {
+                let canvas = document.createElement("canvas");
+                JsBarcode(canvas, codigoValido, {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 1.5,
+                    height: 30,
+                    displayValue: true,
+                    fontSize: 10,
+                    margin: 0
+                });
+                barcodeDataUrl = canvas.toDataURL("image/png");
+            } catch (e) {
+                console.error("Erro JsBarcode:", e);
+            }
             
-            let h = `<style>@media print{@page{margin:10.7mm 4.7mm;size:A4;}body{-webkit-print-color-adjust:exact;}} .pmc{display:grid;grid-template-columns:repeat(5,38.2mm);grid-auto-rows:21.2mm;column-gap:2.5mm;row-gap:0mm;justify-content:center;} .etq{width:38.2mm;height:21.2mm;display:flex;flex-direction:column;justify-content:center;align-items:center;background:white;overflow:hidden;box-sizing:border-box;padding:1mm;} .e-t{font-size:5pt;font-weight:bold;} .e-n{font-size:5pt;font-weight:600;} .e-d{font-size:4.5pt;color:#333;} .e-s{display:flex;justify-content:center;align-items:center;height:8mm;overflow:hidden;width:100%;} .e-s canvas{max-height:100%;max-width:100%;object-fit:contain;} .e-p{font-size:6pt;font-weight:900;margin-top:1px;}</style><div class="pmc pt-4">`; 
-            for(let i = 0; i < qtd; i++){ 
-                h += `<div class="etq" style="break-inside:avoid;"><div class="e-t">SINTONIA</div><div class="e-n">${p.nome}</div><div class="e-d">${p.cor.substring(0,8)} - Tam: <b>${p.tam}</b></div><div class="e-s"><canvas id="bcanvas-${i}"></canvas></div><div class="e-p">${formatBRL(p.preco)}</div></div>`; 
+            // Constrói o HTML já com a imagem do código de barras lá dentro
+            let h = `<style>
+                @media print {
+                    @page { margin: 10.7mm 4.7mm; size: A4; }
+                    body { -webkit-print-color-adjust: exact; }
+                } 
+                .pmc { display: grid; grid-template-columns: repeat(5, 38.2mm); grid-auto-rows: 21.2mm; column-gap: 2.5mm; row-gap: 0mm; justify-content: center; } 
+                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding: 1mm; } 
+                .e-t { font-size: 5pt; font-weight: bold; } 
+                .e-n { font-size: 5pt; font-weight: 600; text-align: center; line-height: 1; } 
+                .e-d { font-size: 4.5pt; color: #333; margin-bottom: 1px; } 
+                .e-s { display: flex; justify-content: center; align-items: center; height: 8mm; overflow: hidden; width: 100%; } 
+                .e-s img { max-height: 100%; max-width: 100%; object-fit: contain; } 
+                .e-p { font-size: 6pt; font-weight: 900; margin-top: 1px; }
+            </style>
+            <div class="pmc pt-4">`; 
+
+            for(let i=0; i < qtd; i++) { 
+                h += `<div class="etq" style="break-inside:avoid;">
+                    <div class="e-t">SINTONIA</div>
+                    <div class="e-n">${p.nome}</div>
+                    <div class="e-d">${p.cor.substring(0,8)} - Tam: <b>${p.tam}</b></div>
+                    <div class="e-s">${barcodeDataUrl ? `<img src="${barcodeDataUrl}">` : `<span>[ERRO]</span>`}</div>
+                    <div class="e-p">${formatBRL(p.preco)}</div>
+                </div>`; 
             } 
             h += '</div>'; 
             document.getElementById('print-area').innerHTML = h; 
-            
-            let codigoValido = (p.sku && p.sku.trim() !== '') ? p.sku : '000000';
-            for(let i = 0; i < qtd; i++){ 
-                try {
-                    JsBarcode("#bcanvas-" + i, codigoValido, {
-                        format: "CODE128",
-                        lineColor: "#000",
-                        width: 1,
-                        height: 25,
-                        displayValue: true,
-                        fontSize: 8,
-                        margin: 0,
-                        textMargin: 0
-                    }); 
-                } catch(e) {
-                    console.error("Erro JsBarcode:", e);
-                }
-            }
             
             document.getElementById('btn-copiar-whatsapp').classList.add('hidden'); 
             document.getElementById('modal-impressao').classList.remove('hidden'); 
@@ -683,7 +659,6 @@
 
         function imprimirRelatorioMensal() { const fU = document.getElementById('filtro-unidade-dash').value, dt = getFiltroDatas(); let vf = db.vendas; if(fU!=="todas") vf=vf.filter(v=>v.canal.includes(fU)); if(dt.inicio) vf=vf.filter(v=>parseBrDate(v.data)>=dt.inicio); if(dt.fim) vf=vf.filter(v=>parseBrDate(v.data)<=dt.fim); const rv={}; vf.forEach(v=>{ const vd = v.vendedora||"Balcão"; if(!rv[vd]) rv[vd]={t:0, q:0, n:0}; rv[vd].t+=v.valor; rv[vd].n+=1; rv[vd].q+=(v.itens||[]).reduce((a,i)=>a+i.qtd,0); }); let tr="", gt=0, gp=0, gc=0; Object.keys(rv).sort((a,b)=>rv[b].t-rv[a].t).forEach(n=>{ const d=rv[n]; const c = d.t<=25000 ? d.t*0.01 : (25000*0.01)+((d.t-25000)*0.015); gt+=d.t; gp+=d.q; gc+=c; tr+=`<tr class="border-b border-slate-200"><td class="py-2 font-bold">${n}</td><td class="py-2 text-center">${d.n}</td><td class="py-2 text-center">${d.q}</td><td class="py-2 text-right font-bold text-slate-800">${formatBRL(d.t)}</td><td class="py-2 text-right font-bold text-indigo-700">${formatBRL(c)}</td></tr>`; }); document.getElementById('print-area').innerHTML = `<div class="w-full"><div class="text-center border-b border-slate-800 pb-3 mb-4"><h2 class="text-xl font-bold uppercase">Fechamento & Comissão</h2><p class="text-xs text-slate-500">Unidade: ${fU}</p></div><table class="w-full text-sm text-left"><thead><tr class="text-xs uppercase text-slate-500 border-b-2 border-slate-800"><th class="py-2">Vendedora</th><th class="py-2 text-center">Vendas</th><th class="py-2 text-center">Peças</th><th class="py-2 text-right">Vendido</th><th class="py-2 text-right">Comissão</th></tr></thead><tbody>${tr||'<tr><td colspan="5" class="py-4 text-center">Sem dados.</td></tr>'}</tbody><tfoot class="bg-slate-100 font-bold border-t-2 border-slate-800"><tr><td class="py-3 text-right" colspan="2">Totais:</td><td class="py-3 text-center">${gp}</td><td class="py-3 text-right text-emerald-700 text-lg">${formatBRL(gt)}</td><td class="py-3 text-right text-indigo-700 text-lg">${formatBRL(gc)}</td></tr></tfoot></table></div>`; document.getElementById('btn-copiar-whatsapp').classList.add('hidden'); document.getElementById('modal-impressao').classList.remove('hidden'); document.getElementById('modal-impressao').classList.add('flex'); }
 
-        // Renderização
         function getFiltroDatas() { const i=document.getElementById('dash-data-ini').value, f=document.getElementById('dash-data-fim').value; return { inicio: i?new Date(i+"T00:00:00"):null, fim: f?new Date(f+"T23:59:59"):null }; }
         function setFiltroData(t) { const h = new Date(), di=document.getElementById('dash-data-ini'), df=document.getElementById('dash-data-fim'); if(t==='hoje'){ const s = `${h.getFullYear()}-${padZero(h.getMonth()+1)}-${padZero(h.getDate())}`; di.value=s; df.value=s; }else if(t==='mes'){ const pd = new Date(h.getFullYear(), h.getMonth(), 1), ud = new Date(h.getFullYear(), h.getMonth()+1, 0); di.value=`${pd.getFullYear()}-${padZero(pd.getMonth()+1)}-${padZero(pd.getDate())}`; df.value=`${ud.getFullYear()}-${padZero(ud.getMonth()+1)}-${padZero(ud.getDate())}`; }else{ di.value=''; df.value=''; } renderAll(); }
         
@@ -702,7 +677,6 @@
             document.getElementById('tabela-vendas').innerHTML = db.vendas.map(v=>`<tr><td class="p-4 text-xs"><span class="font-bold">#${v.id}</span><br>${v.data}</td><td class="p-4 font-semibold text-xs">${v.canal}<br><span class="font-normal text-slate-400">${v.vendedora}</span></td><td class="p-4 text-xs max-w-xs truncate">${(v.itens||[]).map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4"><span class="badge bg-slate-100">${v.pgto}</span></td><td class="p-4 text-slate-500 admin-only">${formatBRL(v.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(v.valor)}</td><td class="p-4 admin-only"><span class="font-bold text-blue-600">${formatBRL(v.valor-(v.custoTotal||0))}</span> <span class="text-xs text-slate-400">(${(v.valor>0?((v.valor-(v.custoTotal||0))/v.valor)*100:0).toFixed(0)}%)</span></td><td class="p-4 text-right"><button onclick="verReciboVenda(${v.id})" class="text-slate-500 mr-2"><i class="fa-solid fa-receipt"></i></button><button onclick="excluirVenda(${v.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             document.getElementById('tabela-contas').innerHTML = db.contas.map(c=>`<tr><td class="p-4 text-xs">${c.venc.split('-').reverse().join('/')}</td><td class="p-4 font-medium">${c.desc}</td><td class="p-4 text-xs">${c.cat}</td><td class="p-4 text-xs"><span class="badge bg-slate-100">${c.unidade}</span></td><td class="p-4 font-bold ${c.status==="Pago"?'text-slate-400 line-through':'text-rose-600'}">${formatBRL(c.valor)}</td><td class="p-4"><span class="badge ${c.status==="Pago"?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">${c.status}</span></td><td class="p-4 text-right"><button onclick="alternarStatusConta(${c.id})" class="badge bg-slate-800 text-white mr-2">${c.status==="Pago"?'Desfazer':'Pagar'}</button><button onclick="excluirConta(${c.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
 
-            // DASHBOARD
             const sVnd = document.getElementById('filtro-vendedora-dash'); const curVnd = sVnd.value; const nv=new Set(); db.vendas.forEach(v=>{if(v.vendedora) nv.add(v.vendedora.trim());}); sVnd.innerHTML=`<option value="todas">Todos Atendentes</option>` + [...nv].sort().map(n=>`<option value="${n}">${n}</option>`).join(''); if(Array.from(sVnd.options).some(o=>o.value===curVnd)) sVnd.value = curVnd;
             
             const fU = document.getElementById('filtro-unidade-dash').value, fV = sVnd.value, dt = getFiltroDatas();
