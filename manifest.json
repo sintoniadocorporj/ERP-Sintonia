@@ -7,12 +7,12 @@
   "theme_color": "#db2777",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192/db2777/ffffff?text=S",
+      "src": "./logo.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://via.placeholder.com/512/db2777/ffffff?text=S",
+      "src": "./logo.png",
       "sizes": "512x512",
       "type": "image/png"
     }
