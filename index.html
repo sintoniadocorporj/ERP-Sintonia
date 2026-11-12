@@ -1,3 +1,4 @@
+HTML
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,6 +9,7 @@
     <meta name="theme-color" content="#db2777">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Biblioteca Segura para Códigos de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -637,16 +639,16 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO CORRIGIDA PARA CÓDIGO DE BARRAS
+        // FUNÇÃO CORRIGIDA PARA CÓDIGO DE BARRAS (SVG)
         function confirmarImpressaoEtiquetas() { 
             const id=parseInt(document.getElementById('etiqueta-prod-id').value), qtd=parseInt(document.getElementById('etiqueta-qtd').value)||1; 
             fecharModalQtdEtiquetas(); 
             const p=db.produtos.find(x=>x.id===id); 
             if(!p) return; 
             
-            let h=`<style>@media print{@page{margin:10.7mm 4.7mm;size:A4;}body{-webkit-print-color-adjust:exact;}} .pmc{display:grid;grid-template-columns:repeat(5,38.2mm);grid-auto-rows:21.2mm;column-gap:2.5mm;row-gap:0mm;justify-content:center;} .etq{width:38.2mm;height:21.2mm;display:flex;flex-direction:column;justify-content:center;align-items:center;background:white;overflow:hidden;box-sizing:border-box;padding:1mm;} .e-t{font-size:5pt;font-weight:bold;} .e-n{font-size:5pt;font-weight:600;} .e-d{font-size:4.5pt;color:#333;} .e-s{display:flex;justify-content:center;height:8mm;overflow:hidden;} .e-s img{height:100%;width:auto;} .e-p{font-size:6pt;font-weight:900;margin-top:1px;}</style><div class="pmc pt-4">`; 
+            let h=`<style>@media print{@page{margin:10.7mm 4.7mm;size:A4;}body{-webkit-print-color-adjust:exact;}} .pmc{display:grid;grid-template-columns:repeat(5,38.2mm);grid-auto-rows:21.2mm;column-gap:2.5mm;row-gap:0mm;justify-content:center;} .etq{width:38.2mm;height:21.2mm;display:flex;flex-direction:column;justify-content:center;align-items:center;background:white;overflow:hidden;box-sizing:border-box;padding:1mm;} .e-t{font-size:5pt;font-weight:bold;} .e-n{font-size:5pt;font-weight:600;} .e-d{font-size:4.5pt;color:#333;} .e-s{display:flex;justify-content:center;height:8mm;overflow:hidden;} .e-s svg{height:100%;width:auto;} .e-p{font-size:6pt;font-weight:900;margin-top:1px;}</style><div class="pmc pt-4">`; 
             for(let i=0;i<qtd;i++){ 
-                h+=`<div class="etq" style="break-inside:avoid;"><div class="e-t">SINTONIA</div><div class="e-n">${p.nome}</div><div class="e-d">${p.cor.substring(0,8)} - Tam: <b>${p.tam}</b></div><div class="e-s"><img id="bimg-${i}"></div><div class="e-p">${formatBRL(p.preco)}</div></div>`; 
+                h+=`<div class="etq" style="break-inside:avoid;"><div class="e-t">SINTONIA</div><div class="e-n">${p.nome}</div><div class="e-d">${p.cor.substring(0,8)} - Tam: <b>${p.tam}</b></div><div class="e-s"><svg id="bsvg-${i}"></svg></div><div class="e-p">${formatBRL(p.preco)}</div></div>`; 
             } 
             h+='</div>'; 
             document.getElementById('print-area').innerHTML=h; 
@@ -655,26 +657,28 @@
             document.getElementById('modal-impressao').classList.remove('hidden'); 
             document.getElementById('modal-impressao').classList.add('flex'); 
             
+            // Intervalo aumentado ligeiramente para garantir o carregamento do DOM antes de desenhar o SVG
             setTimeout(() => {
                 for(let i=0;i<qtd;i++){ 
                     try {
-                        let imgElem = document.getElementById(`bimg-${i}`);
-                        let codigo = p.sku ? p.sku : '000000';
-                        JsBarcode(imgElem, codigo, {
+                        // Se a peça não tiver SKU por algum motivo, desenha um código genérico (ex: 000000)
+                        let codigoValido = (p.sku && p.sku.trim() !== '') ? p.sku : '000000';
+                        
+                        JsBarcode(`#bsvg-${i}`, codigoValido, {
                             format: "CODE128",
                             lineColor: "#000",
-                            width: 1,
-                            height: 25,
+                            width: 1.0,
+                            height: 20,
                             displayValue: true,
-                            fontSize: 7,
+                            fontSize: 6,
                             margin: 0,
                             textMargin: 0
-                        });
+                        }); 
                     } catch(e) {
-                        console.error("Erro JsBarcode:", e);
+                        console.error(`Erro ao gerar código de barras na etiqueta ${i}:`, e);
                     }
                 }
-            }, 250);
+            }, 150);
         }
 
         function verRomaneioImpressao(id) { const r = db.transferencias.find(t=>t.id===id); if(!r) return; document.getElementById('print-area').innerHTML = `<div class="text-left w-full"><div class="text-center border-b border-slate-200 pb-3"><h4 class="font-bold uppercase">Sintonia • Romaneio</h4><p class="text-xs">Destino: <strong>${r.destino}</strong></p><p class="text-xs">Emissão: ${r.data}</p></div><div class="py-2">${r.itens.map(i=>`<div class="flex justify-between py-1.5 border-b border-slate-100"><span><strong>${i.qtd}x</strong> ${i.nome} <small class="text-slate-400">(${i.sku})</small></span><span>[ &nbsp; ]</span></div>`).join('')}</div><div class="flex justify-between font-bold pt-2 border-t border-slate-200"><span>Total:</span><span>${r.totalPecas} pçs</span></div></div>`; textoCompartilhamento = `*ROMANEIO*\nDestino: ${r.destino}\n\n${r.itens.map(i=>`- ${i.qtd}x ${i.nome}`).join('\n')}\n*Total: ${r.totalPecas}*`; document.getElementById('btn-copiar-whatsapp').classList.remove('hidden'); document.getElementById('modal-impressao').classList.remove('hidden'); document.getElementById('modal-impressao').classList.add('flex'); }
