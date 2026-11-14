@@ -8,7 +8,6 @@
     <meta name="theme-color" content="#db2777">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Biblioteca Segura para Códigos de Barras -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -444,7 +443,6 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT COM SUPABASE ABERTO E DUPLO LEITOR -->
     <script>
         const supabaseUrl = 'https://zcgblnoldtvopnxsfzdb.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZ2Jsbm9sZHR2b3BueHNmemRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0MTI2NDIsImV4cCI6MjEwOTk4ODY0Mn0.Ri5OiUcid0lrrrj7O7montIX8lbXgate5VHF1OltTks';
@@ -456,60 +454,30 @@
         let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
         let html5QrCodeScanner = null;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            carregarBancoDeDados();
-        });
+        window.addEventListener('DOMContentLoaded', () => { carregarBancoDeDados(); });
 
-        function abrirModalAdmin() {
-            document.getElementById('modal-senha-admin').classList.remove('hidden');
-            document.getElementById('modal-senha-admin').classList.add('flex');
-            document.getElementById('input-senha-admin').focus();
-        }
-        function fecharModalAdmin() {
-            document.getElementById('modal-senha-admin').classList.add('hidden');
-            document.getElementById('modal-senha-admin').classList.remove('flex');
-            document.getElementById('input-senha-admin').value = '';
-        }
+        function abrirModalAdmin() { document.getElementById('modal-senha-admin').classList.remove('hidden'); document.getElementById('modal-senha-admin').classList.add('flex'); document.getElementById('input-senha-admin').focus(); }
+        function fecharModalAdmin() { document.getElementById('modal-senha-admin').classList.add('hidden'); document.getElementById('modal-senha-admin').classList.remove('flex'); document.getElementById('input-senha-admin').value = ''; }
         function validarSenhaAdmin() {
             const input = document.getElementById('input-senha-admin').value;
             if(input === SENHA_ADMIN) {
-                fecharModalAdmin();
-                const styleRestricao = document.getElementById('style-restricao');
-                if(styleRestricao) styleRestricao.disabled = true; 
-                window.perfilAtual = 'admin';
-                document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-unlock text-[10px]"></i> Modo Gestão Ativo`;
-                document.getElementById('btn-desbloqueio').classList.add('hidden');
-                document.getElementById('btn-bloqueio').classList.remove('hidden');
-                switchTab('dashboard');
-            } else {
-                alert("Senha gerencial incorreta!");
-            }
+                fecharModalAdmin(); const styleRestricao = document.getElementById('style-restricao'); if(styleRestricao) styleRestricao.disabled = true; 
+                window.perfilAtual = 'admin'; document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-unlock text-[10px]"></i> Modo Gestão Ativo`;
+                document.getElementById('btn-desbloqueio').classList.add('hidden'); document.getElementById('btn-bloqueio').classList.remove('hidden'); switchTab('dashboard');
+            } else { alert("Senha gerencial incorreta!"); }
         }
         function bloquearAdmin() {
-            const styleRestricao = document.getElementById('style-restricao');
-            if(styleRestricao) styleRestricao.disabled = false;
-            window.perfilAtual = 'loja';
-            document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> PDV Bloqueado`;
-            document.getElementById('btn-bloqueio').classList.add('hidden');
-            document.getElementById('btn-desbloqueio').classList.remove('hidden');
-            switchTab('vendas');
+            const styleRestricao = document.getElementById('style-restricao'); if(styleRestricao) styleRestricao.disabled = false;
+            window.perfilAtual = 'loja'; document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> PDV Bloqueado`;
+            document.getElementById('btn-bloqueio').classList.add('hidden'); document.getElementById('btn-desbloqueio').classList.remove('hidden'); switchTab('vendas');
         }
 
         function abrirLeitorCamera() {
             document.getElementById('reader-container').classList.remove('hidden');
             if (!html5QrCodeScanner) { html5QrCodeScanner = new Html5Qrcode("reader"); }
-            html5QrCodeScanner.start(
-                { facingMode: "environment" }, 
-                { fps: 10, qrbox: { width: 250, height: 100 } },
-                (decodedText) => { document.getElementById('pdv-produto-busca').value = decodedText.trim().toUpperCase(); addItemPDV(); fecharLeitorCamera(); },
-                (errorMessage) => {}
-            ).catch((err) => { alert("Erro ao aceder à câmara: " + err); });
+            html5QrCodeScanner.start( { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 100 } }, (decodedText) => { document.getElementById('pdv-produto-busca').value = decodedText.trim().toUpperCase(); addItemPDV(); fecharLeitorCamera(); }, (errorMessage) => {} ).catch((err) => { alert("Erro ao aceder à câmara: " + err); });
         }
-
-        function fecharLeitorCamera() {
-            if (html5QrCodeScanner) { html5QrCodeScanner.stop().then(() => { document.getElementById('reader-container').classList.add('hidden'); }).catch(err => { document.getElementById('reader-container').classList.add('hidden'); }); } 
-            else { document.getElementById('reader-container').classList.add('hidden'); }
-        }
+        function fecharLeitorCamera() { if (html5QrCodeScanner) { html5QrCodeScanner.stop().then(() => { document.getElementById('reader-container').classList.add('hidden'); }).catch(err => { document.getElementById('reader-container').classList.add('hidden'); }); } else { document.getElementById('reader-container').classList.add('hidden'); } }
 
         async function dbInsert(t, obj) { try { await clienteSupabase.from(t).insert([obj]); } catch(e){console.error(e)} }
         async function dbUpdate(t, id, obj) { try { await clienteSupabase.from(t).update(obj).eq('id', id); } catch(e){console.error(e)} }
@@ -572,7 +540,17 @@
         async function excluirRomaneio(id) { const rom = db.transferencias.find(t=>t.id===id); if(rom && confirm("Estornar Romaneio?")){ let mods=[]; rom.itens.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ p.estConfeccao+=i.qtd; if(rom.destino==="Loja Tijuca") p.estTijuca=Math.max(0,p.estTijuca-i.qtd); else if(rom.destino==="Loja São Cristóvão") p.estSaoCristovao=Math.max(0,p.estSaoCristovao-i.qtd); else if(rom.destino==="Estoque Shopee") p.estShopee=Math.max(0,p.estShopee-i.qtd); mods.push(p); } }); db.transferencias=db.transferencias.filter(t=>t.id!==id); renderAll(); await dbDelete('transferencias', id); for(let mp of mods) await syncEstoque(mp); } }
 
         function handleBarcodeScan(e) { if(e.key==='Enter'){ e.preventDefault(); const v = e.target.value.trim().toUpperCase(); e.target.value=''; if(!v) return; document.getElementById('pdv-produto-busca').value = v; addItemPDV(); } }
-        function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value, p = db.produtos.find(x=>x.sku===b.split(' | ')[0].trim()), q = parseInt(document.getElementById('pdv-qtd').value)||1; if(!p) return alert("Selecione um produto."); let s=0; if(c.includes("Tijuca")||c==="Shopee"||c==="Nuvemshop") s=p.estTijuca; else if(c.includes("São Cristóvão")||c==="Shopee SC") s=p.estSaoCristovao; else if(c==="Estoque Shopee") s=p.estShopee; const it = carrinhoPDV.find(i=>i.prodId===p.id); if(s < ((it?it.qtd:0)+q)) return alert(`Estoque insuficiente! Saldo: ${s}`); if(it) it.qtd+=q; else carrinhoPDV.push({prodId:p.id, sku:p.sku, nome:`${p.nome} (${p.cor}-${p.tam})`, qtd:q, preco:p.preco, custo:p.custo||0}); document.getElementById('pdv-qtd').value=1; document.getElementById('pdv-produto-busca').value=''; renderCarrinhoPDV(); }
+        function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value;
+            // Ajustado para pesquisar diretamente pelo NOME (sem SKU) baseado na nova lista simplificada do PDV
+            const p = db.produtos.find(x => `${x.nome} - ${x.cor} - ${x.tam}` === b.trim() || x.sku === b.trim()); 
+            const q = parseInt(document.getElementById('pdv-qtd').value)||1; 
+            if(!p) return alert("Selecione um produto."); 
+            let s=0; if(c.includes("Tijuca")||c==="Shopee"||c==="Nuvemshop") s=p.estTijuca; else if(c.includes("São Cristóvão")||c==="Shopee SC") s=p.estSaoCristovao; else if(c==="Estoque Shopee") s=p.estShopee; 
+            const it = carrinhoPDV.find(i=>i.prodId===p.id); 
+            if(s < ((it?it.qtd:0)+q)) return alert(`Estoque insuficiente! Saldo: ${s}`); 
+            if(it) it.qtd+=q; else carrinhoPDV.push({prodId:p.id, sku:p.sku, nome:`${p.nome} (${p.cor}-${p.tam})`, qtd:q, preco:p.preco, custo:p.custo||0}); 
+            document.getElementById('pdv-qtd').value=1; document.getElementById('pdv-produto-busca').value=''; renderCarrinhoPDV(); 
+        }
         function removerItemPDV(i) { carrinhoPDV.splice(i,1); renderCarrinhoPDV(); }
         async function finalizarVendaPDV() { if(!carrinhoPDV.length) return; const c=document.getElementById('pdv-canal').value, d=parseFloat(document.getElementById('pdv-desconto').value)||0, pg=document.getElementById('pdv-pgto').value, vn=document.getElementById('pdv-vendedora').value||"Balcão", sub=carrinhoPDV.reduce((a,b)=>a+(b.preco*b.qtd),0), ct=carrinhoPDV.reduce((a,b)=>a+(b.custo*b.qtd),0), v=Math.max(0,sub-d); let mods=[]; carrinhoPDV.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ if(c.includes("Tijuca")||c==="Shopee"||c==="Nuvemshop") p.estTijuca-=i.qtd; else if(c.includes("São Cristóvão")||c==="Shopee SC") p.estSaoCristovao-=i.qtd; else if(c==="Estoque Shopee") p.estShopee-=i.qtd; mods.push(p); } }); const nv = {id:Date.now(), data:new Date().toLocaleDateString('pt-BR'), canal:c, vendedora:vn, pgto:pg, desconto:d, valor:v, custoTotal:ct, itens:[...carrinhoPDV]}; db.vendas.unshift(nv); carrinhoPDV=[]; document.getElementById('pdv-desconto').value=0; document.getElementById('pdv-vendedora').value=""; verReciboVenda(nv.id); renderAll(); await dbInsert('vendas', nv); for(let mp of mods) await syncEstoque(mp); }
         async function excluirVenda(id) { const v = db.vendas.find(x=>x.id===id); if(v && confirm("Cancelar Venda?")){ let mods=[]; v.itens.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ if(v.canal.includes("Tijuca")||v.canal==="Shopee"||v.canal==="Nuvemshop") p.estTijuca+=i.qtd; else if(v.canal.includes("São Cristóvão")||v.canal==="Shopee SC") p.estSaoCristovao+=i.qtd; else if(v.canal==="Estoque Shopee") p.estShopee+=i.qtd; mods.push(p); } }); db.vendas=db.vendas.filter(x=>x.id!==id); renderAll(); await dbDelete('vendas', id); for(let mp of mods) await syncEstoque(mp); } }
@@ -587,7 +565,6 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO DEFINITIVA (CÓDIGO DE BARRAS GERADO EM MEMÓRIA E COLADO COMO IMAGEM)
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
@@ -595,53 +572,44 @@
             const p = db.produtos.find(x => x.id === id); 
             if(!p) return; 
 
-            // Proteção: Limpa caracteres inválidos do SKU para evitar erro na biblioteca
             let codigoValido = (p.sku && p.sku.trim() !== '') ? p.sku.trim() : '000000';
             codigoValido = codigoValido.replace(/[^a-zA-Z0-9-]/g, '');
             if(codigoValido === '') codigoValido = '000000';
 
-            // Desenha o código numa "tela invisível" e guarda como ficheiro de imagem
             let barcodeDataUrl = "";
             try {
                 let canvas = document.createElement("canvas");
                 JsBarcode(canvas, codigoValido, {
                     format: "CODE128",
                     lineColor: "#000",
-                    width: 1.5,
-                    height: 30,
-                    displayValue: true,
-                    fontSize: 10,
+                    width: 2, 
+                    height: 50, 
+                    displayValue: false, 
                     margin: 0
                 });
                 barcodeDataUrl = canvas.toDataURL("image/png");
-            } catch (e) {
-                console.error("Erro JsBarcode:", e);
-            }
+            } catch (e) { console.error("Erro JsBarcode:", e); }
             
-            // Constrói o HTML já com a imagem do código de barras lá dentro
+            // CSS AJUSTADO: -5mm no topo, fontes maiores e barra enorme.
             let h = `<style>
                 @media print {
-                    @page { margin: 10.7mm 4.7mm; size: A4; }
+                    @page { margin: 5.7mm 4.7mm; size: A4; }
                     body { -webkit-print-color-adjust: exact; }
                 } 
                 .pmc { display: grid; grid-template-columns: repeat(5, 38.2mm); grid-auto-rows: 21.2mm; column-gap: 2.5mm; row-gap: 0mm; justify-content: center; } 
-                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding: 1mm; } 
-                .e-t { font-size: 5pt; font-weight: bold; } 
-                .e-n { font-size: 5pt; font-weight: 600; text-align: center; line-height: 1; } 
-                .e-d { font-size: 4.5pt; color: #333; margin-bottom: 1px; } 
-                .e-s { display: flex; justify-content: center; align-items: center; height: 8mm; overflow: hidden; width: 100%; } 
-                .e-s img { max-height: 100%; max-width: 100%; object-fit: contain; } 
-                .e-p { font-size: 6pt; font-weight: 900; margin-top: 1px; }
+                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding: 0.5mm; } 
+                .e-n { font-size: 6pt; font-weight: 800; text-align: center; line-height: 1; margin-bottom: 2px;} 
+                .e-s { display: flex; justify-content: center; align-items: center; height: 11mm; width: 100%; overflow: hidden;} 
+                .e-s img { height: 100%; width: 95%; object-fit: fill; } 
+                .e-t { font-size: 5pt; font-weight: 900; margin-top: 1px; }
             </style>
             <div class="pmc pt-4">`; 
 
             for(let i=0; i < qtd; i++) { 
                 h += `<div class="etq" style="break-inside:avoid;">
-                    <div class="e-t">SINTONIA</div>
-                    <div class="e-n">${p.nome}</div>
-                    <div class="e-d">${p.cor.substring(0,8)} - Tam: <b>${p.tam}</b></div>
+                    <div class="e-n">${p.nome.substring(0,25)}</div>
                     <div class="e-s">${barcodeDataUrl ? `<img src="${barcodeDataUrl}">` : `<span>[ERRO]</span>`}</div>
-                    <div class="e-p">${formatBRL(p.preco)}</div>
+                    <div class="e-t">${p.cor.substring(0,8)} - TAM: ${p.tam}</div>
                 </div>`; 
             } 
             h += '</div>'; 
@@ -666,12 +634,27 @@
         function renderCarrinhoPDV() { const tS=carrinhoPDV.reduce((a,b)=>a+(b.preco*b.qtd),0), tC=carrinhoPDV.reduce((a,b)=>a+(b.custo*b.qtd),0), d=parseFloat(document.getElementById('pdv-desconto').value)||0, fn=Math.max(0,tS-d); document.getElementById('pdv-resumo-itens').innerText = `${carrinhoPDV.reduce((a,b)=>a+b.qtd,0)} peças`; document.getElementById('pdv-total-final').innerText = formatBRL(fn); document.getElementById('pdv-lucro-previsto').innerText = `Lucro: ${formatBRL(fn-tC)}`; document.getElementById('tabela-carrinho-pdv').innerHTML = carrinhoPDV.length ? carrinhoPDV.map((i,x)=>`<tr><td class="p-3 font-medium">${i.nome}</td><td class="p-3 text-center font-bold">${i.qtd}</td><td class="p-3 text-slate-500">${formatBRL(i.preco)}</td><td class="p-3 font-semibold">${formatBRL(i.preco*i.qtd)}</td><td class="p-3 text-right"><button onclick="removerItemPDV(${x})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') : `<tr><td colspan="5" class="p-4 text-center text-xs">Vazio.</td></tr>`; }
 
         function renderAll() {
-            const listHtml = db.produtos.map(p=>`<option value="${p.sku} | ${p.nome} ${p.cor} [${p.tam}] | R$ ${p.preco.toFixed(2)}"></option>`).join('');
-            document.getElementById('pdv-produtos-list').innerHTML = listHtml; document.getElementById('rom-produtos-list').innerHTML = listHtml;
+            // PDV Limpo: Só Nome - Cor - Tamanho
+            const listHtmlPDV = db.produtos.map(p=>`<option value="${p.nome} - ${p.cor} - ${p.tam}"></option>`).join('');
+            document.getElementById('pdv-produtos-list').innerHTML = listHtmlPDV; 
+            
+            // Resto do sistema mantém formato longo
+            const listHtmlNormal = db.produtos.map(p=>`<option value="${p.sku} | ${p.nome} ${p.cor} [${p.tam}] | R$ ${p.preco.toFixed(2)}"></option>`).join('');
+            document.getElementById('rom-produtos-list').innerHTML = listHtmlNormal;
             document.getElementById('op-produto').innerHTML = db.produtos.map(p=>`<option value="${p.id}">${p.sku} - ${p.nome} (${p.cor} ${p.tam})</option>`).join('');
 
             document.getElementById('tabela-fichas').innerHTML = (db.fichas||[]).map(f=>`<tr class="hover:bg-slate-50"><td class="p-4 text-xs">${f.data}</td><td class="p-4 font-bold">${f.nome}</td><td class="p-4 text-xs">${f.tecido}</td><td class="p-4 font-bold text-slate-900">${formatBRL(f.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(f.precoVenda)}</td><td class="p-4 text-xs badge bg-slate-100">${(f.precoVenda>0?((f.precoVenda-f.custoTotal)/f.precoVenda*100):0).toFixed(1)}%</td><td class="p-4 text-right space-x-2"><button onclick="gerarProdutoDaFicha(${f.id})" class="badge bg-pink-100 text-pink-700">Gerar ➡</button><button onclick="excluirFicha(${f.id})" class="text-slate-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
-            document.getElementById('tabela-produtos').innerHTML = db.produtos.map(p=>`<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td><td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td><td class="p-3"><span class="text-slate-500 font-medium">${formatBRL(p.custo)}</span><br><span class="font-bold">${formatBRL(p.preco)}</span></td><td class="p-3 font-bold text-emerald-600">${formatBRL(p.preco-p.custo)}</td><td class="p-3 text-center bg-amber-50/30 text-amber-900 font-bold">${p.estConfeccao}</td><td class="p-3 text-center bg-blue-50/30 text-blue-900 font-bold">${p.estTijuca}</td><td class="p-3 text-center bg-purple-50/30 text-purple-900 font-bold">${p.estSaoCristovao}</td><td class="p-3 text-center bg-orange-50/30 text-orange-900 font-bold">${p.estShopee||0}</td><td class="p-3 text-center font-bold">${p.estConfeccao+p.estTijuca+p.estSaoCristovao+(p.estShopee||0)}</td><td class="p-3 text-right flex flex-col gap-2"><button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500"><i class="fa-solid fa-pen"></i></button><button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500"><i class="fa-solid fa-barcode"></i></button><button onclick="excluirProduto(${p.id})" class="text-slate-300"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            
+            // CATÁLOGO COM ZEROS A VERMELHO
+            document.getElementById('tabela-produtos').innerHTML = db.produtos.map(p=>{
+                const cF = p.estConfeccao === 0 ? 'text-rose-600 font-black text-lg' : 'text-amber-900 font-bold';
+                const cT = p.estTijuca === 0 ? 'text-rose-600 font-black text-lg' : 'text-blue-900 font-bold';
+                const cS = p.estSaoCristovao === 0 ? 'text-rose-600 font-black text-lg' : 'text-purple-900 font-bold';
+                const cSh = p.estShopee === 0 ? 'text-rose-600 font-black text-lg' : 'text-orange-900 font-bold';
+                
+                return `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td><td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td><td class="p-3"><span class="text-slate-500 font-medium">${formatBRL(p.custo)}</span><br><span class="font-bold">${formatBRL(p.preco)}</span></td><td class="p-3 font-bold text-emerald-600">${formatBRL(p.preco-p.custo)}</td><td class="p-3 text-center bg-amber-50/30 ${cF}">${p.estConfeccao}</td><td class="p-3 text-center bg-blue-50/30 ${cT}">${p.estTijuca}</td><td class="p-3 text-center bg-purple-50/30 ${cS}">${p.estSaoCristovao}</td><td class="p-3 text-center bg-orange-50/30 ${cSh}">${p.estShopee||0}</td><td class="p-3 text-center font-bold">${p.estConfeccao+p.estTijuca+p.estSaoCristovao+(p.estShopee||0)}</td><td class="p-3 text-right flex flex-col gap-2"><button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500"><i class="fa-solid fa-pen"></i></button><button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500"><i class="fa-solid fa-barcode"></i></button><button onclick="excluirProduto(${p.id})" class="text-slate-300"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+            }).join('');
+            
             document.getElementById('tabela-ops').innerHTML = db.ops.map(o=>{ const p = db.produtos.find(x=>x.id===o.prodId); return `<tr><td class="p-4 font-bold text-xs">#OP-${o.id}</td><td class="p-4 text-xs">${o.data}</td><td class="p-4 font-medium">${p?p.nome:'Removido'}</td><td class="p-4 font-bold">${o.qtd}</td><td class="p-4 text-xs">${o.obs}</td><td class="p-4"><span class="badge bg-slate-100">${o.status}</span></td><td class="p-4 text-right">${o.status!=="Finalizado"?`<button onclick="avancarOP(${o.id})" class="badge bg-slate-800 text-white">Avançar ➡</button>`:`<span class="badge bg-emerald-100 text-emerald-800">No Estoque</span>`} <button onclick="excluirOP(${o.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('');
             document.getElementById('tabela-transferencias').innerHTML = db.transferencias.map(t=>`<tr><td class="p-4 font-bold text-xs">#ROM-${t.id}</td><td class="p-4 text-xs">${t.data}</td><td class="p-4 font-bold text-indigo-700">${t.destino}</td><td class="p-4 text-xs max-w-xs truncate">${t.itens.map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4 text-center font-bold">${t.totalPecas}</td><td class="p-4 text-right"><button onclick="verRomaneioImpressao(${t.id})" class="badge bg-indigo-100 text-indigo-800 mr-2">Ver PDF</button><button onclick="excluirRomaneio(${t.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             document.getElementById('tabela-vendas').innerHTML = db.vendas.map(v=>`<tr><td class="p-4 text-xs"><span class="font-bold">#${v.id}</span><br>${v.data}</td><td class="p-4 font-semibold text-xs">${v.canal}<br><span class="font-normal text-slate-400">${v.vendedora}</span></td><td class="p-4 text-xs max-w-xs truncate">${(v.itens||[]).map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4"><span class="badge bg-slate-100">${v.pgto}</span></td><td class="p-4 text-slate-500 admin-only">${formatBRL(v.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(v.valor)}</td><td class="p-4 admin-only"><span class="font-bold text-blue-600">${formatBRL(v.valor-(v.custoTotal||0))}</span> <span class="text-xs text-slate-400">(${(v.valor>0?((v.valor-(v.custoTotal||0))/v.valor)*100:0).toFixed(0)}%)</span></td><td class="p-4 text-right"><button onclick="verReciboVenda(${v.id})" class="text-slate-500 mr-2"><i class="fa-solid fa-receipt"></i></button><button onclick="excluirVenda(${v.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
@@ -700,11 +683,6 @@
             document.getElementById('tabela-dre-mensal').innerHTML = dO.length ? dO.map(m=>{ const d=ms[m], r=d.f-d.c-d.d, nm = new Date(m.split('/')[1],m.split('/')[0]-1).toLocaleString('pt-BR',{month:'short'}).toUpperCase(); return `<tr><td class="p-3 font-bold text-slate-700">${nm}/${m.split('/')[1]}</td><td class="p-3 text-right font-medium text-emerald-600">${formatBRL(d.f)}</td><td class="p-3 text-right text-slate-500">${formatBRL(d.c)}</td><td class="p-3 text-right text-rose-500">${formatBRL(d.d)}</td><td class="p-3 text-right font-black ${r>=0?'text-emerald-600':'text-rose-600'}">${formatBRL(r)}</td></tr>`; }).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum dado financeiro.</td></tr>`;
 
             renderCarrinhoPDV(); renderCarrinhoRomaneio();
-        }
-    </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
         }
     </script>
 </body>
