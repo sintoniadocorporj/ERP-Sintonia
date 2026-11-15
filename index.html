@@ -205,10 +205,11 @@
                         </div>
                         <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3 sm:col-span-2">
                             <h4 class="text-xs font-bold text-slate-500 uppercase">1. Material e Tecido</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div><label class="text-xs text-slate-500">Tipo</label><input type="text" id="ficha-tecido-nome" value="Suplex" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div>
-                                <div><label class="text-xs text-slate-500">Preço do Rolo</label><input type="number" step="0.01" id="ficha-tecido-preco" placeholder="Ex: 35.00" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div>
-                                <div><label class="text-xs text-slate-500">Consumo</label><input type="number" step="0.01" id="ficha-tecido-cons" placeholder="Ex: 0.35" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                <div><label class="text-xs text-slate-500">Tecido</label><input type="text" id="ficha-tecido-nome" value="Suplex" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div>
+                                <div><label class="text-xs text-slate-500">Preço / KG (R$)</label><input type="number" step="0.01" id="ficha-tecido-preco" placeholder="Ex: 60.00" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div>
+                                <div><label class="text-xs text-slate-500">Peso Peça (KG)</label><input type="number" step="0.01" id="ficha-tecido-cons" placeholder="Ex: 0.30" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm text-indigo-700 font-bold bg-indigo-50"></div>
+                                <div><label class="text-xs text-slate-500">Perda / Retalho (%)</label><input type="number" step="1" id="ficha-tecido-perda" value="20" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-rose-600 bg-rose-50"></div>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                                 <div><label class="text-xs text-slate-500">Custo Aviamentos</label><input type="number" step="0.01" id="ficha-aviamento" value="0" oninput="simularFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div>
@@ -228,7 +229,7 @@
                     <div>
                         <h3 class="font-bold text-lg mb-6 text-pink-400">Resumo da Precificação</h3>
                         <div class="space-y-4 text-sm mb-6">
-                            <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Custo Tecido:</span><span class="font-semibold" id="res-custo-tecido">R$ 0,00</span></div>
+                            <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Custo Tecido (C/ Perda):</span><span class="font-semibold" id="res-custo-tecido">R$ 0,00</span></div>
                             <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Aviamentos:</span><span class="font-semibold" id="res-custo-extra">R$ 0,00</span></div>
                             <div class="flex justify-between border-b border-slate-700 pb-2"><span class="text-slate-400">Facção:</span><span class="font-semibold text-rose-300" id="res-custo-mao">R$ 0,00</span></div>
                         </div>
@@ -243,7 +244,7 @@
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
-                    <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-4">Data</th><th class="p-4">Modelo Base</th><th class="p-4 font-bold">Custo Calculado</th><th class="p-4 text-emerald-700 font-bold">Preço Planejado</th><th class="p-4">Margem</th><th class="p-4 text-right">Ação</th></tr></thead>
+                    <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-4">Data</th><th class="p-4">Modelo Base</th><th class="p-4 font-bold">Custo Calculado</th><th class="p-4 text-emerald-700 font-bold">Preço Planejado</th><th class="p-4">Margem</th><th class="p-4 text-right">Ações</th></tr></thead>
                     <tbody id="tabela-fichas" class="divide-y divide-slate-200"></tbody>
                 </table>
             </div>
@@ -410,6 +411,46 @@
     </main>
 
     <!-- MODAIS DE APOIO -->
+
+    <!-- NOVO MODAL: EDITAR FICHA DE CUSTO -->
+    <div id="modal-editar-ficha" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <h3 class="font-bold text-lg text-slate-900">Editar Ficha Técnica</h3>
+            <input type="hidden" id="edit-ficha-id">
+            
+            <div class="space-y-3 text-sm max-h-[70vh] overflow-y-auto p-1">
+                <div><label class="text-xs font-semibold text-slate-500">Modelo</label><input type="text" id="edit-ficha-nome" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2"></div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div class="sm:col-span-1"><label class="text-[10px] font-semibold text-slate-500 uppercase">Tecido</label><input type="text" id="edit-ficha-tecido-nome" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs"></div>
+                    <div class="sm:col-span-1"><label class="text-[10px] font-semibold text-slate-500 uppercase">R$/KG</label><input type="number" step="0.01" id="edit-ficha-tecido-preco" oninput="simularEdicaoFichaCusto()" placeholder="Re-digite..." class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs"></div>
+                    <div class="sm:col-span-1"><label class="text-[10px] font-semibold text-slate-500 uppercase">Peso(KG)</label><input type="number" step="0.01" id="edit-ficha-tecido-cons" oninput="simularEdicaoFichaCusto()" placeholder="Re-digite..." class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs"></div>
+                    <div class="sm:col-span-1"><label class="text-[10px] font-semibold text-slate-500 uppercase">Perda(%)</label><input type="number" step="1" id="edit-ficha-tecido-perda" oninput="simularEdicaoFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs text-rose-600 font-bold bg-rose-50"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-[10px] font-semibold text-slate-500 uppercase">Aviamentos (R$)</label><input type="number" step="0.01" id="edit-ficha-aviamento" oninput="simularEdicaoFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs"></div>
+                    <div><label class="text-[10px] font-semibold text-slate-500 uppercase">Embalagem (R$)</label><input type="number" step="0.01" id="edit-ficha-embalagem" oninput="simularEdicaoFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs"></div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div><label class="text-[10px] font-semibold text-slate-500 uppercase">Facção (R$)</label><input type="number" step="0.01" id="edit-ficha-costura" oninput="simularEdicaoFichaCusto()" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs"></div>
+                    <div><label class="text-[10px] font-semibold text-slate-500 uppercase">Preço Venda (R$)</label><input type="number" step="0.01" id="edit-ficha-preco" class="w-full mt-1 border border-slate-300 rounded-xl px-2 py-2 text-xs font-bold text-emerald-700 bg-emerald-50"></div>
+                </div>
+                
+                <div class="mt-2 bg-slate-800 p-3 rounded-xl flex justify-between items-center text-white">
+                    <span class="text-xs uppercase font-bold text-slate-400">Novo Custo Base:</span>
+                    <span class="text-lg font-bold" id="edit-res-custo-total">R$ 0,00</span>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button onclick="fecharModalEditarFicha()" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-medium">Cancelar</button>
+                <button onclick="salvarEdicaoFicha()" class="px-5 py-2 rounded-xl bg-pink-600 text-white font-bold text-sm">Atualizar Ficha</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-editar-prod" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50 no-print">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
             <h3 class="font-bold text-lg text-slate-900">Editar Catálogo & Estoque</h3>
@@ -496,22 +537,110 @@
         function parseBrDate(s) { if(!s) return new Date(0); const p = s.split('/'); if(p.length===3) return new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`); return new Date(s); }
         function padZero(n) { return (n < 10 ? '0' : '') + n; }
 
+        // LÓGICA DE FICHAS DE CUSTO
         function simularFichaCusto() {
-            const pt = parseFloat(document.getElementById('ficha-tecido-preco').value)||0, ct = parseFloat(document.getElementById('ficha-tecido-cons').value)||0;
+            const pt = parseFloat(document.getElementById('ficha-tecido-preco').value)||0;
+            const ct = parseFloat(document.getElementById('ficha-tecido-cons').value)||0;
+            const perda = parseFloat(document.getElementById('ficha-tecido-perda').value)||0;
             const extra = (parseFloat(document.getElementById('ficha-aviamento').value)||0) + (parseFloat(document.getElementById('ficha-embalagem').value)||0);
             const fac = parseFloat(document.getElementById('ficha-costura').value)||0, pv = parseFloat(document.getElementById('ficha-preco').value)||0;
-            const tCusto = (pt*ct) + extra + fac;
-            document.getElementById('res-custo-tecido').innerText = formatBRL(pt*ct); document.getElementById('res-custo-extra').innerText = formatBRL(extra); document.getElementById('res-custo-mao').innerText = formatBRL(fac); document.getElementById('res-custo-total').innerText = formatBRL(tCusto);
+            
+            const custoTecidoComPerda = pt * (ct * (1 + (perda/100)));
+            const tCusto = custoTecidoComPerda + extra + fac;
+            
+            document.getElementById('res-custo-tecido').innerText = formatBRL(custoTecidoComPerda); 
+            document.getElementById('res-custo-extra').innerText = formatBRL(extra); 
+            document.getElementById('res-custo-mao').innerText = formatBRL(fac); 
+            document.getElementById('res-custo-total').innerText = formatBRL(tCusto);
+            
             if(pv > 0){ document.getElementById('res-lucro-proj').innerText = formatBRL(pv - tCusto); document.getElementById('res-margem-proj').innerText = `${((pv-tCusto)/pv*100).toFixed(1)}% (${(pv/tCusto).toFixed(1)}x)`; }
         }
         async function salvarFicha() {
             const nome = document.getElementById('ficha-nome').value.trim(); if(!nome) return alert("Dê um nome");
-            const tec = document.getElementById('ficha-tecido-nome').value, calc = (parseFloat(document.getElementById('ficha-tecido-preco').value)||0)*(parseFloat(document.getElementById('ficha-tecido-cons').value)||0), ex = (parseFloat(document.getElementById('ficha-aviamento').value)||0)+(parseFloat(document.getElementById('ficha-embalagem').value)||0), fac = parseFloat(document.getElementById('ficha-costura').value)||0, pv = parseFloat(document.getElementById('ficha-preco').value)||0;
-            const nFicha = { id: Date.now(), nome, tecido: tec, "custoTecido": calc, "custoAviamento": ex, "custoFaccao": fac, "custoTotal": calc+ex+fac, "precoVenda": pv, data: new Date().toLocaleDateString('pt-BR') };
+            const tec = document.getElementById('ficha-tecido-nome').value;
+            const pt = parseFloat(document.getElementById('ficha-tecido-preco').value)||0;
+            const ct = parseFloat(document.getElementById('ficha-tecido-cons').value)||0;
+            const perda = parseFloat(document.getElementById('ficha-tecido-perda').value)||0;
+            
+            const calcTecido = pt * (ct * (1 + (perda/100)));
+            const ex = (parseFloat(document.getElementById('ficha-aviamento').value)||0)+(parseFloat(document.getElementById('ficha-embalagem').value)||0), fac = parseFloat(document.getElementById('ficha-costura').value)||0, pv = parseFloat(document.getElementById('ficha-preco').value)||0;
+            const nFicha = { id: Date.now(), nome, tecido: tec, "custoTecido": calcTecido, "custoAviamento": ex, "custoFaccao": fac, "custoTotal": calcTecido+ex+fac, "precoVenda": pv, data: new Date().toLocaleDateString('pt-BR') };
             db.fichas.unshift(nFicha); document.getElementById('ficha-nome').value = ''; document.getElementById('ficha-preco').value = ''; simularFichaCusto(); renderAll(); await dbInsert('fichas', nFicha);
         }
         async function excluirFicha(id) { if(!confirm("Excluir?")) return; db.fichas = db.fichas.filter(f => f.id !== id); renderAll(); await dbDelete('fichas', id); }
         function gerarProdutoDaFicha(id) { const f = db.fichas.find(x => x.id===id); if(!f) return; document.getElementById('prod-nome').value = f.nome; document.getElementById('prod-custo').value = f.custoTotal.toFixed(2); document.getElementById('prod-preco').value = f.precoVenda.toFixed(2); switchTab('produtos'); }
+
+        // NOVA LÓGICA DE EDIÇÃO DE FICHAS
+        function abrirModalEditarFicha(id) {
+            const f = db.fichas.find(x => x.id === id);
+            if (!f) return;
+            document.getElementById('edit-ficha-id').value = f.id;
+            document.getElementById('edit-ficha-nome').value = f.nome;
+            document.getElementById('edit-ficha-tecido-nome').value = f.tecido;
+
+            document.getElementById('edit-ficha-tecido-preco').value = '';
+            document.getElementById('edit-ficha-tecido-cons').value = '';
+            document.getElementById('edit-ficha-tecido-perda').value = 20;
+
+            document.getElementById('edit-ficha-aviamento').value = f.custoAviamento || 0;
+            document.getElementById('edit-ficha-embalagem').value = 0;
+            document.getElementById('edit-ficha-costura').value = f.custoFaccao || 0;
+            document.getElementById('edit-ficha-preco').value = f.precoVenda || 0;
+
+            document.getElementById('edit-res-custo-total').innerText = formatBRL(f.custoTotal);
+
+            document.getElementById('modal-editar-ficha').classList.remove('hidden');
+            document.getElementById('modal-editar-ficha').classList.add('flex');
+        }
+        function fecharModalEditarFicha() {
+            document.getElementById('modal-editar-ficha').classList.add('hidden');
+            document.getElementById('modal-editar-ficha').classList.remove('flex');
+        }
+        function simularEdicaoFichaCusto() {
+            const pt = parseFloat(document.getElementById('edit-ficha-tecido-preco').value)||0;
+            const ct = parseFloat(document.getElementById('edit-ficha-tecido-cons').value)||0;
+            const perda = parseFloat(document.getElementById('edit-ficha-tecido-perda').value)||0;
+
+            let custoTecido = 0;
+            if (pt > 0 && ct > 0) {
+                custoTecido = pt * (ct * (1 + (perda/100)));
+            } else {
+                const id = parseInt(document.getElementById('edit-ficha-id').value);
+                const f = db.fichas.find(x => x.id === id);
+                custoTecido = f ? f.custoTecido : 0;
+            }
+
+            const extra = (parseFloat(document.getElementById('edit-ficha-aviamento').value)||0) + (parseFloat(document.getElementById('edit-ficha-embalagem').value)||0);
+            const fac = parseFloat(document.getElementById('edit-ficha-costura').value)||0;
+
+            const tCusto = custoTecido + extra + fac;
+            document.getElementById('edit-res-custo-total').innerText = formatBRL(tCusto);
+            return { custoTecido, extra, fac, tCusto };
+        }
+        async function salvarEdicaoFicha() {
+            const id = parseInt(document.getElementById('edit-ficha-id').value);
+            const f = db.fichas.find(x => x.id === id);
+            if (!f) return;
+
+            const res = simularEdicaoFichaCusto();
+
+            f.nome = document.getElementById('edit-ficha-nome').value.trim();
+            f.tecido = document.getElementById('edit-ficha-tecido-nome').value;
+            f.custoTecido = res.custoTecido;
+            f.custoAviamento = res.extra;
+            f.custoFaccao = res.fac;
+            f.custoTotal = res.tCusto;
+            f.precoVenda = parseFloat(document.getElementById('edit-ficha-preco').value)||0;
+
+            fecharModalEditarFicha();
+            renderAll();
+
+            await dbUpdate('fichas', id, {
+                nome: f.nome, tecido: f.tecido, custoTecido: f.custoTecido,
+                custoAviamento: f.custoAviamento, custoFaccao: f.custoFaccao,
+                custoTotal: f.custoTotal, precoVenda: f.precoVenda
+            });
+        }
 
         function gerarSKU(n, t, c, tm) { return `${n.replace(/[^a-zA-Z]/g,'').substring(0,3).toUpperCase()}-${t.substring(0,3).toUpperCase()}-${c.replace(/[^a-zA-Z]/g,'').substring(0,3).toUpperCase()}-${tm.toUpperCase()}`; }
         async function addProduto(e) {
@@ -541,7 +670,6 @@
 
         function handleBarcodeScan(e) { if(e.key==='Enter'){ e.preventDefault(); const v = e.target.value.trim().toUpperCase(); e.target.value=''; if(!v) return; document.getElementById('pdv-produto-busca').value = v; addItemPDV(); } }
         function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value;
-            // Ajustado para pesquisar diretamente pelo NOME (sem SKU) baseado na nova lista simplificada do PDV
             const p = db.produtos.find(x => `${x.nome} - ${x.cor} - ${x.tam}` === b.trim() || x.sku === b.trim()); 
             const q = parseInt(document.getElementById('pdv-qtd').value)||1; 
             if(!p) return alert("Selecione um produto."); 
@@ -590,7 +718,6 @@
                 barcodeDataUrl = canvas.toDataURL("image/png");
             } catch (e) { console.error("Erro JsBarcode:", e); }
             
-            // CSS AJUSTADO: -5mm no topo, fontes maiores e barra enorme.
             let h = `<style>
                 @media print {
                     @page { margin: 5.7mm 4.7mm; size: A4; }
@@ -634,18 +761,16 @@
         function renderCarrinhoPDV() { const tS=carrinhoPDV.reduce((a,b)=>a+(b.preco*b.qtd),0), tC=carrinhoPDV.reduce((a,b)=>a+(b.custo*b.qtd),0), d=parseFloat(document.getElementById('pdv-desconto').value)||0, fn=Math.max(0,tS-d); document.getElementById('pdv-resumo-itens').innerText = `${carrinhoPDV.reduce((a,b)=>a+b.qtd,0)} peças`; document.getElementById('pdv-total-final').innerText = formatBRL(fn); document.getElementById('pdv-lucro-previsto').innerText = `Lucro: ${formatBRL(fn-tC)}`; document.getElementById('tabela-carrinho-pdv').innerHTML = carrinhoPDV.length ? carrinhoPDV.map((i,x)=>`<tr><td class="p-3 font-medium">${i.nome}</td><td class="p-3 text-center font-bold">${i.qtd}</td><td class="p-3 text-slate-500">${formatBRL(i.preco)}</td><td class="p-3 font-semibold">${formatBRL(i.preco*i.qtd)}</td><td class="p-3 text-right"><button onclick="removerItemPDV(${x})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('') : `<tr><td colspan="5" class="p-4 text-center text-xs">Vazio.</td></tr>`; }
 
         function renderAll() {
-            // PDV Limpo: Só Nome - Cor - Tamanho
             const listHtmlPDV = db.produtos.map(p=>`<option value="${p.nome} - ${p.cor} - ${p.tam}"></option>`).join('');
             document.getElementById('pdv-produtos-list').innerHTML = listHtmlPDV; 
             
-            // Resto do sistema mantém formato longo
             const listHtmlNormal = db.produtos.map(p=>`<option value="${p.sku} | ${p.nome} ${p.cor} [${p.tam}] | R$ ${p.preco.toFixed(2)}"></option>`).join('');
             document.getElementById('rom-produtos-list').innerHTML = listHtmlNormal;
             document.getElementById('op-produto').innerHTML = db.produtos.map(p=>`<option value="${p.id}">${p.sku} - ${p.nome} (${p.cor} ${p.tam})</option>`).join('');
 
-            document.getElementById('tabela-fichas').innerHTML = (db.fichas||[]).map(f=>`<tr class="hover:bg-slate-50"><td class="p-4 text-xs">${f.data}</td><td class="p-4 font-bold">${f.nome}</td><td class="p-4 text-xs">${f.tecido}</td><td class="p-4 font-bold text-slate-900">${formatBRL(f.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(f.precoVenda)}</td><td class="p-4 text-xs badge bg-slate-100">${(f.precoVenda>0?((f.precoVenda-f.custoTotal)/f.precoVenda*100):0).toFixed(1)}%</td><td class="p-4 text-right space-x-2"><button onclick="gerarProdutoDaFicha(${f.id})" class="badge bg-pink-100 text-pink-700">Gerar ➡</button><button onclick="excluirFicha(${f.id})" class="text-slate-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
+            // ADICIONADO BOTÃO DE LÁPIS NAS FICHAS
+            document.getElementById('tabela-fichas').innerHTML = (db.fichas||[]).map(f=>`<tr class="hover:bg-slate-50"><td class="p-4 text-xs">${f.data}</td><td class="p-4 font-bold">${f.nome}</td><td class="p-4 text-xs">${f.tecido}</td><td class="p-4 font-bold text-slate-900">${formatBRL(f.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(f.precoVenda)}</td><td class="p-4 text-xs badge bg-slate-100">${(f.precoVenda>0?((f.precoVenda-f.custoTotal)/f.precoVenda*100):0).toFixed(1)}%</td><td class="p-4 text-right space-x-2"><button onclick="abrirModalEditarFicha(${f.id})" class="text-indigo-500 mr-2" title="Editar Ficha"><i class="fa-solid fa-pen"></i></button><button onclick="gerarProdutoDaFicha(${f.id})" class="badge bg-pink-100 text-pink-700">Gerar ➡</button><button onclick="excluirFicha(${f.id})" class="text-slate-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             
-            // CATÁLOGO COM ZEROS A VERMELHO
             document.getElementById('tabela-produtos').innerHTML = db.produtos.map(p=>{
                 const cF = p.estConfeccao === 0 ? 'text-rose-600 font-black text-lg' : 'text-amber-900 font-bold';
                 const cT = p.estTijuca === 0 ? 'text-rose-600 font-black text-lg' : 'text-blue-900 font-bold';
