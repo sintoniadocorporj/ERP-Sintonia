@@ -793,7 +793,7 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO BLINDADA - Corta o nome aos 20 caracteres, força o viewBox e usa max-width
+        // FUNÇÃO CORRIGIDA - Restaurada espessura do código para 2 e aplicada margem 10 para criar a "Zona de Silêncio"
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
@@ -811,16 +811,15 @@
                 JsBarcode(svgNode, codigoValido, {
                     format: "CODE128",
                     lineColor: "#000",
-                    width: 1.2, 
+                    width: 2, // RESTAURADO PARA 2: Espessura correta para ser lido pelo laser
                     height: 40, 
                     displayValue: false, 
-                    margin: 0
+                    margin: 10 // NOVA TRAVA: 10px de Margem de Silêncio obrigatória para o leitor ótico
                 });
                 
                 const w = svgNode.getAttribute("width");
                 const h = svgNode.getAttribute("height");
                 svgNode.setAttribute("viewBox", `0 0 ${w} ${h}`);
-                // A TRAVA MÁGICA DO VETOR:
                 svgNode.setAttribute("preserveAspectRatio", "xMidYMid meet");
                 svgNode.setAttribute("width", "100%");
                 svgNode.setAttribute("height", "100%");
@@ -829,7 +828,6 @@
                 svgHtml = svgNode.outerHTML;
             } catch (e) { console.error("Erro JsBarcode:", e); }
             
-            // A TRAVA DO NOME: Corta no caractere 20 se for muito grande
             let nomeCurto = p.nome.length > 20 ? p.nome.substring(0, 20) + "..." : p.nome;
             
             let h = `<style>
@@ -841,7 +839,6 @@
                 
                 .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding: 1mm 2mm; text-align: center; } 
                 
-                /* max-width absoluto impede que o elemento cresça */
                 .e-n { font-size: 5pt; font-weight: 800; line-height: 1; margin-bottom: 2px; width: 100%; max-width: 34mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
                 
                 .e-s { display: flex; justify-content: center; align-items: center; height: 10mm; width: 100%; max-width: 34mm; overflow: hidden;} 
