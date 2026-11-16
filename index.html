@@ -793,7 +793,7 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO CORRIGIDA - Código mais fino (1.5) e imagem com espaço de respiro (90%)
+        // FUNÇÃO CORRIGIDA - Motor SVG Vectorial garante nitidez absoluta e elimina erros de Canvas
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
@@ -805,18 +805,18 @@
             codigoValido = codigoValido.replace(/[^a-zA-Z0-9-]/g, '');
             if(codigoValido === '') codigoValido = '000000';
 
-            let barcodeDataUrl = "";
+            let svgHtml = "<span>[ERRO]</span>";
             try {
-                let canvas = document.createElement("canvas");
-                JsBarcode(canvas, codigoValido, {
+                let svgNode = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                JsBarcode(svgNode, codigoValido, {
                     format: "CODE128",
                     lineColor: "#000",
-                    width: 1.5, // 1. ALTERAÇÃO: Reduzido de 2 para 1.5 para a barra ficar menos esticada horizontalmente
+                    width: 1.5, 
                     height: 40, 
                     displayValue: false, 
                     margin: 0
                 });
-                barcodeDataUrl = canvas.toDataURL("image/png");
+                svgHtml = svgNode.outerHTML;
             } catch (e) { console.error("Erro JsBarcode:", e); }
             
             let h = `<style>
@@ -831,9 +831,7 @@
                 .e-n { font-size: 5.5pt; font-weight: 800; line-height: 1; margin-bottom: 2px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
                 
                 .e-s { display: flex; justify-content: center; align-items: center; height: 9.5mm; width: 100%; overflow: hidden;} 
-                
-                /* 2. ALTERAÇÃO: width 90% em vez de 100% cria uma zona de segurança e object-fit contain mantém o centro perfeito */
-                .e-s img { height: 100%; width: 90%; object-fit: contain; } 
+                .e-s svg { height: 100%; width: 90%; } 
                 
                 .e-t { font-size: 5pt; font-weight: 900; margin-top: 2px; line-height: 1; width: 100%; }
             </style>
@@ -842,7 +840,7 @@
             for(let i=0; i < qtd; i++) { 
                 h += `<div class="etq" style="break-inside:avoid;">
                     <div class="e-n">${p.nome}</div>
-                    <div class="e-s">${barcodeDataUrl ? `<img src="${barcodeDataUrl}">` : `<span>[ERRO]</span>`}</div>
+                    <div class="e-s">${svgHtml}</div>
                     <div class="e-t">${p.cor.substring(0,8)} - TAM: ${p.tam}</div>
                 </div>`; 
             } 
