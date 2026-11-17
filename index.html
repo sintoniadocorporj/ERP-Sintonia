@@ -197,6 +197,12 @@
         <section id="tab-precificacao" class="tab-content space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div><h2 class="text-2xl font-bold text-slate-900">Ficha Técnica e Cálculo de Custos</h2></div>
+                <div class="flex items-center gap-3">
+                    <input type="file" id="file-import-csv-fichas" accept=".csv" class="hidden" onchange="processarCSVFichas(event)">
+                    <button onclick="document.getElementById('file-import-csv-fichas').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2 text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap admin-only" title="Importar Planilha de Custos">
+                        <i class="fa-solid fa-file-excel"></i> Importar Fichas (CSV)
+                    </button>
+                </div>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
@@ -260,7 +266,7 @@
                 <div class="flex items-center gap-3">
                     <input type="file" id="file-import-csv" accept=".csv" class="hidden" onchange="processarCSV(event)">
                     <button onclick="document.getElementById('file-import-csv').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2 text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap admin-only" title="Importar Planilha do Excel">
-                        <i class="fa-solid fa-file-excel"></i> Importar CSV
+                        <i class="fa-solid fa-file-excel"></i> Importar CSV Estoque
                     </button>
                     <input type="text" id="filtro-busca-catalogo" onkeyup="filtrarCatalogo()" placeholder="Buscar peça por nome, cor ou SKU..." class="border border-slate-300 rounded-xl px-3 py-2 text-sm w-full md:w-64 shadow-sm">
                 </div>
@@ -551,6 +557,62 @@
         function parseBrDate(s) { if(!s) return new Date(0); const p = s.split('/'); if(p.length===3) return new Date(`${p[2]}-${p[1]}-${p[0]}T12:00:00`); return new Date(s); }
         function padZero(n) { return (n < 10 ? '0' : '') + n; }
 
+        function processarCSVFichas(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async function(results) {
+                    const dados = results.data;
+                    let novasFichas = [];
+                    
+                    const limpaNum = (str) => parseFloat((str||'0').toString().replace(/R\$/g,'').replace(/\./g,'').replace(/,/g,'.').trim()) || 0;
+                    
+                    for(let i=0; i<dados.length; i++) {
+                        const row = dados[i];
+                        if(!row.Nome) continue;
+                        
+                        const pt = limpaNum(row.PrecoTecidoKG);
+                        const ct = limpaNum(row.PesoPecaKG);
+                        const perda = limpaNum(row.PerdaPorcento);
+                        const calcTecido = pt * (ct * (1 + (perda/100)));
+                        
+                        const facPct = limpaNum(row.FaccaoPorcento);
+                        const fac = calcTecido * (facPct / 100);
+                        
+                        const ex = limpaNum(row.Aviamentos) + limpaNum(row.Embalagem);
+                        const pv = limpaNum(row.PrecoVenda);
+                        
+                        const nf = {
+                            id: Date.now() + i,
+                            nome: row.Nome,
+                            tecido: row.Tecido || 'Suplex',
+                            custoTecido: calcTecido,
+                            custoAviamento: ex,
+                            custoFaccao: fac,
+                            custoTotal: calcTecido + ex + fac,
+                            precoVenda: pv,
+                            data: new Date().toLocaleDateString('pt-BR')
+                        };
+                        novasFichas.push(nf);
+                    }
+                    
+                    if(novasFichas.length > 0) {
+                        alert(`Lendo ${novasFichas.length} fichas da planilha. A sincronizar com a nuvem, aguarde...`);
+                        db.fichas = [...novasFichas, ...db.fichas];
+                        renderAll();
+                        await dbInsert('fichas', novasFichas);
+                        alert(`As ${novasFichas.length} fichas foram importadas e guardadas com sucesso!`);
+                    } else {
+                        alert("Atenção: Nenhuma ficha válida encontrada. Verifique se os nomes das colunas na primeira linha estão corretos.");
+                    }
+                    event.target.value = '';
+                }
+            });
+        }
+
         function processarCSV(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -793,7 +855,7 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO DEFINITIVA: Restaura motor original legível + Centraliza com margem oficial
+        // FUNÇÃO ATUALIZADA: Código mecânico da Impressora 
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
@@ -811,10 +873,10 @@
                 JsBarcode(canvas, codigoValido, {
                     format: "CODE128",
                     lineColor: "#000",
-                    width: 2, // Espessura grossa que o leitor adora (como no Sábado)
-                    height: 45, // Um pouco mais alto para o laser achar rápido
+                    width: 2, 
+                    height: 45, 
                     displayValue: false, 
-                    margin: 10 // Zona de silêncio branca obrigatória para a leitura
+                    margin: 10 
                 });
                 barcodeDataUrl = canvas.toDataURL("image/png");
             } catch (e) { console.error("Erro JsBarcode:", e); }
@@ -823,14 +885,14 @@
             
             let h = `<style>
                 @media print {
-                    /* Esta linha impede o navegador de imprimir datas e links no topo! */
                     @page { size: A4; margin: 0 !important; }
                     body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
                     
-                    /* Margens oficiais da folha Pimaco injetadas manualmente */
+                    /* AQUI ESTÁ O AJUSTE MECÂNICO DA SUA IMPRESSORA */
                     .page-container {
-                        padding-top: 10.7mm;
-                        /* Era 4.7mm, reduzido para 2.7mm para compensar o desvio da impressora */
+                        /* Era 10.7mm, agora é 3.7mm (puxa tudo 7mm para CIMA) */
+                        padding-top: 3.7mm; 
+                        /* Era 4.7mm, mantido 2.7mm (compensa desvio para a direita) */
                         padding-left: 2.7mm; 
                         width: 210mm;
                         height: 297mm;
@@ -839,7 +901,8 @@
                 } 
                 .pmc { display: grid; grid-template-columns: repeat(5, 38.2mm); grid-auto-rows: 21.2mm; column-gap: 2.5mm; row-gap: 0mm; justify-content: start; } 
                 
-                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding: 1mm; text-align: center; } 
+                /* Retirei o padding inferior para o texto colar lá no alto da etiqueta */
+                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: start; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding-top: 1mm; padding-left: 1mm; padding-right: 1mm; padding-bottom: 0mm; text-align: center; } 
                 
                 .e-n { font-size: 5pt; font-weight: 800; line-height: 1; margin-bottom: 2px; width: 100%; max-width: 36mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
                 
