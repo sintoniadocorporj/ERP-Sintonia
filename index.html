@@ -291,12 +291,15 @@
             </div>
         </section>
 
-        <!-- 4. CONFECÇÃO -->
+        <!-- 4. CONFECÇÃO (COM BARRA DE BUSCA E COR/TAMANHO NA TABELA) -->
         <section id="tab-confeccao" class="tab-content space-y-6">
             <div><h2 class="text-2xl font-bold text-slate-900">Ordens de Produção (Fábrica)</h2></div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <form onsubmit="addOP(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                    <select id="op-produto" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm md:col-span-2"></select>
+                    <div class="md:col-span-2">
+                        <input type="text" id="op-produto-busca" list="op-produtos-list" placeholder="Digite para buscar a peça..." required autocomplete="off" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                        <datalist id="op-produtos-list"></datalist>
+                    </div>
                     <input type="number" id="op-qtd" placeholder="Qtd" min="1" required class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
                     <input type="text" id="op-obs" placeholder="Facção" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
                     <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl px-4 py-2 text-sm transition">Iniciar OP</button>
@@ -304,7 +307,7 @@
             </div>
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
-                    <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-4">Nº OP</th><th class="p-4">Data Abertura</th><th class="p-4">Produto</th><th class="p-4 font-bold">Qtd</th><th class="p-4">Facção</th><th class="p-4">Andamento</th><th class="p-4 text-right">Controles</th></tr></thead>
+                    <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600"><th class="p-4">Nº OP</th><th class="p-4">Data Abertura</th><th class="p-4">Produto / Cor</th><th class="p-4 font-bold">Qtd</th><th class="p-4">Facção</th><th class="p-4">Andamento</th><th class="p-4 text-right">Controles</th></tr></thead>
                     <tbody id="tabela-ops" class="divide-y divide-slate-200"></tbody>
                 </table>
             </div>
@@ -796,7 +799,19 @@
         async function excluirProduto(id) { if(confirm("Excluir produto?")){ db.produtos = db.produtos.filter(p=>p.id!==id); renderAll(); await dbDelete('produtos', id); } }
         function filtrarCatalogo() { const trm = document.getElementById('filtro-busca-catalogo').value.toLowerCase(); document.querySelectorAll('#tabela-produtos tr').forEach(tr => tr.style.display = tr.innerText.toLowerCase().includes(trm) ? '' : 'none'); }
 
-        async function addOP(e) { e.preventDefault(); const p = parseInt(document.getElementById('op-produto').value), q = parseInt(document.getElementById('op-qtd').value), ob = document.getElementById('op-obs').value||"Interno"; const nop = { id: Date.now(), data: new Date().toLocaleDateString('pt-BR'), prodId: p, qtd: q, obs: ob, status: "Corte" }; db.ops.unshift(nop); e.target.reset(); renderAll(); await dbInsert('ops', nop); }
+        // ATUALIZADO: Busca o produto digitado na barra de busca da Confecção
+        async function addOP(e) { 
+            e.preventDefault(); 
+            const busca = document.getElementById('op-produto-busca').value.trim();
+            const prod = db.produtos.find(x => `${x.nome} - ${x.cor} [${x.tam}]` === busca);
+            if(!prod) return alert("Produto não encontrado! Selecione uma peça válida da lista de busca.");
+            const q = parseInt(document.getElementById('op-qtd').value), ob = document.getElementById('op-obs').value||"Interno"; 
+            const nop = { id: Date.now(), data: new Date().toLocaleDateString('pt-BR'), prodId: prod.id, qtd: q, obs: ob, status: "Corte" }; 
+            db.ops.unshift(nop); 
+            e.target.reset(); 
+            renderAll(); 
+            await dbInsert('ops', nop); 
+        }
         async function avancarOP(id) { const o = db.ops.find(x=>x.id===id); if(o){ const f=["Corte","Costura","Acabamento","Finalizado"]; const i = f.indexOf(o.status); if(i < f.length-1){ o.status = f[i+1]; let pp=null; if(o.status==="Finalizado"){ const p = db.produtos.find(x=>x.id===o.prodId); if(p){ p.estConfeccao+=o.qtd; pp=p; } } renderAll(); await dbUpdate('ops', id, {status: o.status}); if(pp) await syncEstoque(pp); } } }
         async function excluirOP(id) { const o = db.ops.find(x=>x.id===id); if(o && confirm("Excluir OP?")){ let pp=null; if(o.status==="Finalizado"){ const p=db.produtos.find(x=>x.id===o.prodId); if(p){ p.estConfeccao=Math.max(0,p.estConfeccao-o.qtd); pp=p; } } db.ops=db.ops.filter(x=>x.id!==id); renderAll(); await dbDelete('ops', id); if(pp) await syncEstoque(pp); } }
 
@@ -855,7 +870,6 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // FUNÇÃO ATUALIZADA: Código mecânico da Impressora 
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
@@ -887,12 +901,8 @@
                 @media print {
                     @page { size: A4; margin: 0 !important; }
                     body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
-                    
-                    /* AQUI ESTÁ O AJUSTE MECÂNICO DA SUA IMPRESSORA */
                     .page-container {
-                        /* Era 10.7mm, agora é 3.7mm (puxa tudo 7mm para CIMA) */
                         padding-top: 3.7mm; 
-                        /* Era 4.7mm, mantido 2.7mm (compensa desvio para a direita) */
                         padding-left: 2.7mm; 
                         width: 210mm;
                         height: 297mm;
@@ -900,15 +910,10 @@
                     }
                 } 
                 .pmc { display: grid; grid-template-columns: repeat(5, 38.2mm); grid-auto-rows: 21.2mm; column-gap: 2.5mm; row-gap: 0mm; justify-content: start; } 
-                
-                /* Retirei o padding inferior para o texto colar lá no alto da etiqueta */
                 .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: start; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding-top: 1mm; padding-left: 1mm; padding-right: 1mm; padding-bottom: 0mm; text-align: center; } 
-                
                 .e-n { font-size: 5pt; font-weight: 800; line-height: 1; margin-bottom: 2px; width: 100%; max-width: 36mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
-                
                 .e-s { display: flex; justify-content: center; align-items: center; height: 10mm; width: 100%; max-width: 36mm; overflow: hidden;} 
                 .e-s img { height: 100%; max-width: 100%; object-fit: contain; } 
-                
                 .e-t { font-size: 5pt; font-weight: 900; margin-top: 2px; line-height: 1; width: 100%; max-width: 36mm; overflow: hidden; white-space: nowrap;}
             </style>
             <div class="page-container">
@@ -966,8 +971,9 @@
             const listHtmlRomaneio = db.produtos.map(p=>`<option value="${p.nome} - ${p.cor} [${p.tam}] (Fábrica: ${p.estConfeccao})"></option>`).join('');
             document.getElementById('rom-produtos-list').innerHTML = listHtmlRomaneio;
             
-            const listHtmlNormal = db.produtos.map(p=>`<option value="${p.id}">${p.nome} - ${p.cor} [${p.tam}]</option>`).join('');
-            document.getElementById('op-produto').innerHTML = listHtmlNormal;
+            // ATUALIZADO: Popula a barra de busca da Confecção
+            const listHtmlOP = db.produtos.map(p=>`<option value="${p.nome} - ${p.cor} [${p.tam}]"></option>`).join('');
+            document.getElementById('op-produtos-list').innerHTML = listHtmlOP;
 
             document.getElementById('tabela-fichas').innerHTML = (db.fichas||[]).map(f=>`<tr class="hover:bg-slate-50"><td class="p-4 text-xs">${f.data}</td><td class="p-4 font-bold">${f.nome}</td><td class="p-4 text-xs">${f.tecido}</td><td class="p-4 font-bold text-slate-900">${formatBRL(f.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(f.precoVenda)}</td><td class="p-4 text-xs badge bg-slate-100">${(f.precoVenda>0?((f.precoVenda-f.custoTotal)/f.precoVenda*100):0).toFixed(1)}%</td><td class="p-4 text-right space-x-2"><button onclick="abrirModalEditarFicha(${f.id})" class="text-indigo-500 mr-2" title="Editar Ficha"><i class="fa-solid fa-pen"></i></button><button onclick="gerarProdutoDaFicha(${f.id})" class="badge bg-pink-100 text-pink-700">Gerar ➡</button><button onclick="excluirFicha(${f.id})" class="text-slate-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             
@@ -980,7 +986,9 @@
                 return `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td><td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td><td class="p-3"><span class="text-slate-500 font-medium">${formatBRL(p.custo)}</span><br><span class="font-bold">${formatBRL(p.preco)}</span></td><td class="p-3 font-bold text-emerald-600">${formatBRL(p.preco-p.custo)}</td><td class="p-3 text-center bg-amber-50/30 ${cF}">${p.estConfeccao}</td><td class="p-3 text-center bg-blue-50/30 ${cT}">${p.estTijuca}</td><td class="p-3 text-center bg-purple-50/30 ${cS}">${p.estSaoCristovao}</td><td class="p-3 text-center bg-orange-50/30 ${cSh}">${p.estShopee||0}</td><td class="p-3 text-center font-bold">${p.estConfeccao+p.estTijuca+p.estSaoCristovao+(p.estShopee||0)}</td><td class="p-3 text-right flex flex-col gap-2"><button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500"><i class="fa-solid fa-pen"></i></button><button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500"><i class="fa-solid fa-barcode"></i></button><button onclick="excluirProduto(${p.id})" class="text-slate-300"><i class="fa-solid fa-trash"></i></button></td></tr>`;
             }).join('');
             
-            document.getElementById('tabela-ops').innerHTML = db.ops.map(o=>{ const p = db.produtos.find(x=>x.id===o.prodId); return `<tr><td class="p-4 font-bold text-xs">#OP-${o.id}</td><td class="p-4 text-xs">${o.data}</td><td class="p-4 font-medium">${p?p.nome:'Removido'}</td><td class="p-4 font-bold">${o.qtd}</td><td class="p-4 text-xs">${o.obs}</td><td class="p-4"><span class="badge bg-slate-100">${o.status}</span></td><td class="p-4 text-right">${o.status!=="Finalizado"?`<button onclick="avancarOP(${o.id})" class="badge bg-slate-800 text-white">Avançar ➡</button>`:`<span class="badge bg-emerald-100 text-emerald-800">No Estoque</span>`} <button onclick="excluirOP(${o.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('');
+            // ATUALIZADO: Exibe Cor e Tamanho junto ao Produto na tabela de OPs
+            document.getElementById('tabela-ops').innerHTML = db.ops.map(o=>{ const p = db.produtos.find(x=>x.id===o.prodId); return `<tr><td class="p-4 font-bold text-xs">#OP-${o.id}</td><td class="p-4 text-xs">${o.data}</td><td class="p-4">${p ? `<span class="font-semibold block">${p.nome}</span><span class="text-xs text-slate-500">${p.cor} <span class="badge bg-slate-100 text-slate-700 ml-1">${p.tam}</span></span>` : '<span class="text-slate-400">Removido</span>'}</td><td class="p-4 font-bold">${o.qtd}</td><td class="p-4 text-xs">${o.obs}</td><td class="p-4"><span class="badge bg-slate-100">${o.status}</span></td><td class="p-4 text-right">${o.status!=="Finalizado"?`<button onclick="avancarOP(${o.id})" class="badge bg-slate-800 text-white">Avançar ➡</button>`:`<span class="badge bg-emerald-100 text-emerald-800">No Estoque</span>`} <button onclick="excluirOP(${o.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('');
+            
             document.getElementById('tabela-transferencias').innerHTML = db.transferencias.map(t=>`<tr><td class="p-4 font-bold text-xs">#ROM-${t.id}</td><td class="p-4 text-xs">${t.data}</td><td class="p-4 font-bold text-indigo-700">${t.destino}</td><td class="p-4 text-xs max-w-xs truncate">${t.itens.map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4 text-center font-bold">${t.totalPecas}</td><td class="p-4 text-right"><button onclick="verRomaneioImpressao(${t.id})" class="badge bg-indigo-100 text-indigo-800 mr-2">Ver PDF</button><button onclick="excluirRomaneio(${t.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             document.getElementById('tabela-vendas').innerHTML = db.vendas.map(v=>`<tr><td class="p-4 text-xs"><span class="font-bold">#${v.id}</span><br>${v.data}</td><td class="p-4 font-semibold text-xs">${v.canal}<br><span class="font-normal text-slate-400">${v.vendedora}</span></td><td class="p-4 text-xs max-w-xs truncate">${(v.itens||[]).map(i=>`${i.qtd}x ${i.nome}`).join(', ')}</td><td class="p-4"><span class="badge bg-slate-100">${v.pgto}</span></td><td class="p-4 text-slate-500 admin-only">${formatBRL(v.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(v.valor)}</td><td class="p-4 admin-only"><span class="font-bold text-blue-600">${formatBRL(v.valor-(v.custoTotal||0))}</span> <span class="text-xs text-slate-400">(${(v.valor>0?((v.valor-(v.custoTotal||0))/v.valor)*100:0).toFixed(0)}%)</span></td><td class="p-4 text-right"><button onclick="verReciboVenda(${v.id})" class="text-slate-500 mr-2"><i class="fa-solid fa-receipt"></i></button><button onclick="excluirVenda(${v.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             document.getElementById('tabela-contas').innerHTML = db.contas.map(c=>`<tr><td class="p-4 text-xs">${c.venc.split('-').reverse().join('/')}</td><td class="p-4 font-medium">${c.desc}</td><td class="p-4 text-xs">${c.cat}</td><td class="p-4 text-xs"><span class="badge bg-slate-100">${c.unidade}</span></td><td class="p-4 font-bold ${c.status==="Pago"?'text-slate-400 line-through':'text-rose-600'}">${formatBRL(c.valor)}</td><td class="p-4"><span class="badge ${c.status==="Pago"?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">${c.status}</span></td><td class="p-4 text-right"><button onclick="alternarStatusConta(${c.id})" class="badge bg-slate-800 text-white mr-2">${c.status==="Pago"?'Desfazer':'Pagar'}</button><button onclick="excluirConta(${c.id})" class="text-rose-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
