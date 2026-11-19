@@ -259,7 +259,7 @@
             </div>
         </section>
 
-        <!-- 3. CATÁLOGO (COM BOTÃO DE FILA DE ETIQUETAS) -->
+        <!-- 3. CATÁLOGO -->
         <section id="tab-produtos" class="tab-content space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div><h2 class="text-2xl font-bold text-slate-900">Catálogo e Saldo de Estoque</h2></div>
@@ -378,7 +378,17 @@
                         <input type="text" id="pdv-barcode-scanner" onkeypress="handleBarcodeScan(event)" class="w-full border border-slate-300 bg-white rounded-xl px-3 py-2.5 text-sm font-bold outline-none" placeholder="Passe o leitor ou digite o SKU..." autocomplete="off">
                     </div>
 
-                    <div><label class="text-xs font-semibold text-slate-500">Local da Venda</label><select id="pdv-canal" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-emerald-700 bg-emerald-50"><option value="Loja Tijuca">Loja Tijuca (Física)</option><option value="Loja São Cristóvão">Loja São Cristóvão (Física)</option><option value="Shopee">Shopee (Sai da Tijuca)</option><option value="Shopee SC">Shopee (Sai de São Cristóvão)</option><option value="Estoque Shopee">Shopee (Estoque Próprio E-commerce)</option><option value="Nuvemshop">Nuvemshop (Sai da Tijuca)</option></select></div>
+                    <!-- LOCAL DA VENDA ATUALIZADO -->
+                    <div>
+                        <label class="text-xs font-semibold text-slate-500">Local da Venda</label>
+                        <select id="pdv-canal" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-emerald-700 bg-emerald-50">
+                            <option value="Loja Tijuca">Tijuca (Física)</option>
+                            <option value="Loja São Cristóvão">Loja São Cristóvão (Física)</option>
+                            <option value="Estoque Shopee">Shopee (Estoque Próprio)</option>
+                            <option value="Nuvemshop (Tijuca)">Nuvemshop (Saída Tijuca)</option>
+                            <option value="Nuvemshop (São Cristóvão)">Nuvemshop (Saída São Cristóvão)</option>
+                        </select>
+                    </div>
                     <div><label class="text-xs font-semibold text-slate-500">Buscar Peça</label><input type="text" id="pdv-produto-busca" list="pdv-produtos-list" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm" placeholder="Digite para buscar..." autocomplete="off"><datalist id="pdv-produtos-list"></datalist></div>
                     <div class="grid grid-cols-2 gap-3"><div><label class="text-xs font-semibold text-slate-500">Quantidade</label><input type="number" id="pdv-qtd" value="1" min="1" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-2 text-sm"></div><div class="flex items-end"><button type="button" onclick="addItemPDV()" class="w-full bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-xl px-4 py-2 text-sm transition">+ Carrinho</button></div></div>
                 </div>
@@ -498,7 +508,7 @@
         </div>
     </div>
     
-    <!-- MODAL QUANTIDADE DE ETIQUETAS (COM OPÇÃO DE ADICIONAR À FILA) -->
+    <!-- MODAL QUANTIDADE DE ETIQUETAS -->
     <div id="modal-qtd-etiquetas" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-[60] no-print">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
             <h3 class="font-bold text-lg text-slate-900">Etiquetas do Produto</h3><input type="hidden" id="etiqueta-prod-id">
@@ -514,7 +524,7 @@
         </div>
     </div>
 
-    <!-- NOVO MODAL: FILA DE IMPRESSÃO DE ETIQUETAS -->
+    <!-- MODAL FILA DE IMPRESSÃO DE ETIQUETAS -->
     <div id="modal-fila-etiquetas" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-[60] no-print">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
             <div class="flex items-center justify-between">
@@ -986,7 +996,6 @@
         function fecharModalImpressao() { document.getElementById('modal-impressao').classList.add('hidden'); document.getElementById('modal-impressao').classList.remove('flex'); }
         function copiarTextoModal() { navigator.clipboard.writeText(textoCompartilhamento); alert("Copiado!"); }
         
-        // SISTEMA DE FILA DE ETIQUETAS (MULTI-PRODUTOS + PULAR USADAS)
         function abrirModalQtdEtiquetas(id) {
             const p = db.produtos.find(x=>x.id===id);
             if(!p) return;
