@@ -259,11 +259,14 @@
             </div>
         </section>
 
-        <!-- 3. CATÁLOGO -->
+        <!-- 3. CATÁLOGO (COM BOTÃO DE FILA DE ETIQUETAS) -->
         <section id="tab-produtos" class="tab-content space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div><h2 class="text-2xl font-bold text-slate-900">Catálogo e Saldo de Estoque</h2></div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <button onclick="abrirModalFilaEtiquetas()" id="btn-fila-etiquetas" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl px-4 py-2 text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap" title="Imprimir vários produtos na mesma folha A4">
+                        <i class="fa-solid fa-layer-group"></i> Fila de Etiquetas (<span id="badge-fila-etiquetas">0</span>)
+                    </button>
                     <input type="file" id="file-import-csv" accept=".csv" class="hidden" onchange="processarCSV(event)">
                     <button onclick="document.getElementById('file-import-csv').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2 text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap admin-only" title="Importar Planilha do Excel">
                         <i class="fa-solid fa-file-excel"></i> Importar CSV Estoque
@@ -495,18 +498,55 @@
         </div>
     </div>
     
+    <!-- MODAL QUANTIDADE DE ETIQUETAS (COM OPÇÃO DE ADICIONAR À FILA) -->
     <div id="modal-qtd-etiquetas" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-[60] no-print">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
-            <h3 class="font-bold text-lg text-slate-900">Imprimir Etiquetas</h3><input type="hidden" id="etiqueta-prod-id">
-            <p class="text-sm text-slate-500">Altere a quantidade caso queira preencher a folha A4.</p>
-            <div><label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Quantidade a Imprimir</label><input type="number" id="etiqueta-qtd" min="1" value="1" class="w-full mt-1 border-2 border-indigo-200 rounded-xl px-3 py-3 text-center text-xl font-bold bg-indigo-50 outline-none"></div>
-            <div class="flex justify-end gap-2 pt-3"><button onclick="fecharModalQtdEtiquetas()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm">Cancelar</button><button onclick="confirmarImpressaoEtiquetas()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm">Gerar Etiquetas</button></div>
+            <h3 class="font-bold text-lg text-slate-900">Etiquetas do Produto</h3><input type="hidden" id="etiqueta-prod-id">
+            <p class="text-xs text-slate-500" id="etiqueta-prod-resumo">Adicione à fila para juntar vários produtos na mesma folha A4.</p>
+            <div><label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Quantidade</label><input type="number" id="etiqueta-qtd" min="1" value="1" class="w-full mt-1 border-2 border-indigo-200 rounded-xl px-3 py-3 text-center text-xl font-bold bg-indigo-50 outline-none"></div>
+            <div class="flex flex-col gap-2 pt-2">
+                <button onclick="adicionarNaFilaEtiquetas()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Adicionar à Fila (Economizar Folha)</button>
+                <div class="flex justify-end gap-2 pt-1">
+                    <button onclick="fecharModalQtdEtiquetas()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold">Cancelar</button>
+                    <button onclick="confirmarImpressaoEtiquetas()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs">Imprimir Só Este</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOVO MODAL: FILA DE IMPRESSÃO DE ETIQUETAS -->
+    <div id="modal-fila-etiquetas" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-[60] no-print">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-lg text-slate-900">Fila de Etiquetas (Folha A4)</h3>
+                <span id="fila-total-badge" class="badge bg-indigo-100 text-indigo-800">0 / 65 na folha</span>
+            </div>
+            <div class="max-h-60 overflow-y-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead><tr class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500"><th class="p-2.5">Produto / Cor / Tam</th><th class="p-2.5 text-center">Qtd</th><th class="p-2.5 text-right"></th></tr></thead>
+                    <tbody id="tabela-fila-etiquetas" class="divide-y divide-slate-200"></tbody>
+                </table>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-center justify-between gap-3">
+                <div>
+                    <label class="text-xs font-bold text-amber-900 block">Pular etiquetas já usadas</label>
+                    <span class="text-[11px] text-amber-700">Deixe 0 para folha nova ou digite quantas já foram impressas</span>
+                </div>
+                <input type="number" id="fila-pular-qtd" min="0" max="64" value="0" oninput="renderFilaEtiquetas()" class="w-20 border border-amber-300 bg-white rounded-lg px-2 py-1.5 text-center font-bold text-sm outline-none">
+            </div>
+            <div class="flex justify-between gap-2 pt-2">
+                <button onclick="limparFilaEtiquetas()" class="px-4 py-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold">Limpar Fila</button>
+                <div class="flex gap-2">
+                    <button onclick="fecharModalFilaEtiquetas()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold">Fechar</button>
+                    <button onclick="imprimirFilaEtiquetas()" class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs"><i class="fa-solid fa-print mr-1"></i> Gerar Folha A4</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="modal-impressao" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
-            <div id="print-area" class="p-4 border border-slate-200 rounded-xl space-y-3 text-sm flex flex-col items-center"></div>
+            <div id="print-area" class="p-4 border border-slate-200 rounded-xl space-y-3 text-sm flex flex-col items-center max-h-[75vh] overflow-y-auto"></div>
             <div class="flex justify-between gap-2 pt-2 no-print">
                 <button id="btn-copiar-whatsapp" onclick="copiarTextoModal()" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs flex items-center gap-1.5 hidden"><i class="fa-brands fa-whatsapp text-sm"></i> Copiar</button>
                 <div class="flex gap-2 w-full justify-end"><button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-semibold text-xs"><i class="fa-solid fa-print"></i> Imprimir</button><button onclick="fecharModalImpressao()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs">Fechar</button></div>
@@ -522,7 +562,7 @@
         window.perfilAtual = 'loja';
         const SENHA_ADMIN = 'sintonia2026';
         let db = { fichas: [], produtos: [], ops: [], transferencias: [], vendas: [], contas: [] };
-        let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
+        let carrinhoPDV = []; let carrinhoRomaneio = []; let filaEtiquetas = []; let textoCompartilhamento = "";
         let html5QrCodeScanner = null;
         let lanternaAtiva = false;
 
@@ -544,7 +584,6 @@
             document.getElementById('btn-bloqueio').classList.add('hidden'); document.getElementById('btn-desbloqueio').classList.remove('hidden'); switchTab('vendas');
         }
 
-        // ATUALIZADO: Leitor com Zoom 2x automático, controle de Zoom e Lanterna
         function abrirLeitorCamera() {
             document.getElementById('reader-container').classList.remove('hidden');
             lanternaAtiva = false;
@@ -902,7 +941,6 @@
 
         function handleBarcodeScan(e) { if(e.key==='Enter'){ e.preventDefault(); const v = e.target.value.trim().toUpperCase(); e.target.value=''; if(!v) return; document.getElementById('pdv-produto-busca').value = v; addItemPDV(); } }
         
-        // ATUALIZADO: Reconhece nome, SKU antigo, ID completo e o novo código compacto de 8 dígitos
         function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value.trim();
             const p = db.produtos.find(x => `${x.nome} - ${x.cor} - ${x.tam}` === b || x.sku === b || String(x.id) === b || String(x.id).slice(-8) === b); 
             const q = parseInt(document.getElementById('pdv-qtd').value)||1; 
@@ -948,38 +986,69 @@
         function fecharModalImpressao() { document.getElementById('modal-impressao').classList.add('hidden'); document.getElementById('modal-impressao').classList.remove('flex'); }
         function copiarTextoModal() { navigator.clipboard.writeText(textoCompartilhamento); alert("Copiado!"); }
         
-        function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
-        function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
-        
-        // ATUALIZADO: +1mm para a direita, código compacto de 8 dígitos (barras mais grossas) e 13mm de altura útil
-        function confirmarImpressaoEtiquetas() { 
+        // SISTEMA DE FILA DE ETIQUETAS (MULTI-PRODUTOS + PULAR USADAS)
+        function abrirModalQtdEtiquetas(id) {
+            const p = db.produtos.find(x=>x.id===id);
+            if(!p) return;
+            document.getElementById('etiqueta-prod-id').value = p.id;
+            document.getElementById('etiqueta-prod-resumo').innerText = `${p.nome} (${p.cor} - ${p.tam})`;
+            document.getElementById('etiqueta-qtd').value = p.estConfeccao > 0 ? p.estConfeccao : 1;
+            document.getElementById('modal-qtd-etiquetas').classList.remove('hidden');
+            document.getElementById('modal-qtd-etiquetas').classList.add('flex');
+        }
+        function fecharModalQtdEtiquetas() {
+            document.getElementById('modal-qtd-etiquetas').classList.add('hidden');
+            document.getElementById('modal-qtd-etiquetas').classList.remove('flex');
+        }
+        function adicionarNaFilaEtiquetas() {
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
-            const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
-            fecharModalQtdEtiquetas(); 
-            const p = db.produtos.find(x => x.id === id); 
-            if(!p) return; 
+            const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1;
+            const p = db.produtos.find(x => x.id === id);
+            if(!p) return;
+            const existente = filaEtiquetas.find(item => item.prodId === p.id);
+            if(existente) { existente.qtd += qtd; } else { filaEtiquetas.push({ prodId: p.id, qtd: qtd }); }
+            fecharModalQtdEtiquetas();
+            renderFilaEtiquetas();
+        }
+        function abrirModalFilaEtiquetas() {
+            renderFilaEtiquetas();
+            document.getElementById('modal-fila-etiquetas').classList.remove('hidden');
+            document.getElementById('modal-fila-etiquetas').classList.add('flex');
+        }
+        function fecharModalFilaEtiquetas() {
+            document.getElementById('modal-fila-etiquetas').classList.add('hidden');
+            document.getElementById('modal-fila-etiquetas').classList.remove('flex');
+        }
+        function removerItemFilaEtiquetas(idx) {
+            filaEtiquetas.splice(idx, 1);
+            renderFilaEtiquetas();
+        }
+        function limparFilaEtiquetas() {
+            filaEtiquetas = [];
+            document.getElementById('fila-pular-qtd').value = 0;
+            renderFilaEtiquetas();
+        }
+        function renderFilaEtiquetas() {
+            const totalEtq = filaEtiquetas.reduce((a, b) => a + b.qtd, 0);
+            const pular = parseInt(document.getElementById('fila-pular-qtd')?.value) || 0;
+            document.getElementById('badge-fila-etiquetas').innerText = totalEtq;
+            const totalComPular = totalEtq + pular;
+            const badge = document.getElementById('fila-total-badge');
+            if(badge) {
+                badge.innerText = `${totalComPular} / 65 na folha`;
+                badge.className = totalComPular > 65 ? 'badge bg-amber-100 text-amber-800' : 'badge bg-indigo-100 text-indigo-800';
+            }
+            const tbody = document.getElementById('tabela-fila-etiquetas');
+            if(tbody) {
+                tbody.innerHTML = filaEtiquetas.length ? filaEtiquetas.map((item, idx) => {
+                    const p = db.produtos.find(x => x.id === item.prodId);
+                    if(!p) return '';
+                    return `<tr><td class="p-2.5"><span class="font-semibold block text-xs">${p.nome}</span><span class="text-[11px] text-slate-500">${p.cor} - ${p.tam}</span></td><td class="p-2.5 text-center font-bold">${item.qtd}</td><td class="p-2.5 text-right"><button onclick="removerItemFilaEtiquetas(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+                }).join('') : `<tr><td colspan="3" class="p-4 text-center text-xs text-slate-400">Fila vazia. Clique no ícone de código de barras de qualquer produto no catálogo para adicionar.</td></tr>`;
+            }
+        }
 
-            let codigoValido = p.id ? String(p.id).slice(-8) : '00000000';
-
-            let barcodeDataUrl = "";
-            try {
-                let canvas = document.createElement("canvas");
-                JsBarcode(canvas, codigoValido, {
-                    format: "CODE128",
-                    lineColor: "#000",
-                    width: 2, 
-                    height: 80, 
-                    displayValue: false, 
-                    marginTop: 0,
-                    marginBottom: 0,
-                    marginLeft: 10,
-                    marginRight: 10
-                });
-                barcodeDataUrl = canvas.toDataURL("image/png");
-            } catch (e) { console.error("Erro JsBarcode:", e); }
-            
-            let nomeCurto = p.nome.length > 20 ? p.nome.substring(0, 20) + "..." : p.nome;
-            
+        function gerarFolhaEtiquetas(listaItens, pular = 0) {
             let h = `<style>
                 @media print {
                     @page { size: A4; margin: 0 !important; }
@@ -1000,22 +1069,63 @@
                 .e-t { font-size: 5.5pt; font-weight: 900; line-height: 1; width: 100%; max-width: 35mm; overflow: hidden; white-space: nowrap;}
             </style>
             <div class="page-container">
-                <div class="pmc">`; 
+                <div class="pmc">`;
 
-            for(let i=0; i < qtd; i++) { 
-                h += `<div class="etq" style="break-inside:avoid;">
-                    <div class="e-n">${nomeCurto}</div>
-                    <div class="e-s">${barcodeDataUrl ? `<img src="${barcodeDataUrl}">` : `<span>[ERRO]</span>`}</div>
-                    <div class="e-t">${p.cor.substring(0,10)} - ${p.tam}</div>
-                </div>`; 
-            } 
+            for(let e = 0; e < pular; e++) {
+                h += `<div class="etq" style="break-inside:avoid;"></div>`;
+            }
+
+            listaItens.forEach(item => {
+                const p = db.produtos.find(x => x.id === item.prodId);
+                if(!p) return;
+                let codigoValido = p.id ? String(p.id).slice(-8) : '00000000';
+                let barcodeDataUrl = "";
+                try {
+                    let canvas = document.createElement("canvas");
+                    JsBarcode(canvas, codigoValido, {
+                        format: "CODE128",
+                        lineColor: "#000",
+                        width: 2, 
+                        height: 80, 
+                        displayValue: false, 
+                        marginTop: 0,
+                        marginBottom: 0,
+                        marginLeft: 10,
+                        marginRight: 10
+                    });
+                    barcodeDataUrl = canvas.toDataURL("image/png");
+                } catch (e) { console.error("Erro JsBarcode:", e); }
+                
+                let nomeCurto = p.nome.length > 20 ? p.nome.substring(0, 20) + "..." : p.nome;
+                for(let i = 0; i < item.qtd; i++) {
+                    h += `<div class="etq" style="break-inside:avoid;">
+                        <div class="e-n">${nomeCurto}</div>
+                        <div class="e-s">${barcodeDataUrl ? `<img src="${barcodeDataUrl}">` : `<span>[ERRO]</span>`}</div>
+                        <div class="e-t">${p.cor.substring(0,10)} - ${p.tam}</div>
+                    </div>`;
+                }
+            });
+
             h += `  </div>
                   </div>`; 
             document.getElementById('print-area').innerHTML = h; 
-            
             document.getElementById('btn-copiar-whatsapp').classList.add('hidden'); 
             document.getElementById('modal-impressao').classList.remove('hidden'); 
             document.getElementById('modal-impressao').classList.add('flex'); 
+        }
+
+        function confirmarImpressaoEtiquetas() { 
+            const id = parseInt(document.getElementById('etiqueta-prod-id').value);
+            const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
+            fecharModalQtdEtiquetas(); 
+            gerarFolhaEtiquetas([{ prodId: id, qtd: qtd }], 0);
+        }
+
+        function imprimirFilaEtiquetas() {
+            if(!filaEtiquetas.length) return alert("Adicione pelo menos um produto à fila antes de imprimir.");
+            const pular = parseInt(document.getElementById('fila-pular-qtd').value) || 0;
+            fecharModalFilaEtiquetas();
+            gerarFolhaEtiquetas(filaEtiquetas, pular);
         }
 
         function verRomaneioImpressao(id) { const r = db.transferencias.find(t=>t.id===id); if(!r) return; document.getElementById('print-area').innerHTML = `<div class="text-left w-full"><div class="text-center border-b border-slate-200 pb-3"><h4 class="font-bold uppercase">Sintonia • Romaneio</h4><p class="text-xs">Destino(s): <strong>${r.destino}</strong></p><p class="text-xs">Emissão: ${r.data}</p></div><div class="py-2">${r.itens.map(i=>`<div class="flex justify-between py-1.5 border-b border-slate-100"><span><strong>${i.qtd}x</strong> ${i.nome} <br><small class="text-indigo-600 font-bold">${i.destinoItem}</small></span><span>[ &nbsp; ]</span></div>`).join('')}</div><div class="flex justify-between font-bold pt-2 border-t border-slate-200"><span>Total:</span><span>${r.totalPecas} pçs</span></div></div>`; textoCompartilhamento = `*ROMANEIO*\nEmissão: ${r.data}\n\n${r.itens.map(i=>`- ${i.qtd}x ${i.nome} ➡ *${i.destinoItem}*`).join('\n')}\n*Total: ${r.totalPecas}*`; document.getElementById('btn-copiar-whatsapp').classList.remove('hidden'); document.getElementById('modal-impressao').classList.remove('hidden'); document.getElementById('modal-impressao').classList.add('flex'); }
@@ -1096,7 +1206,7 @@
             const dO = Object.keys(ms).sort((a,b)=>{ const [ma,ya]=a.split('/'), [mb,yb]=b.split('/'); return new Date(yb,mb-1)-new Date(ya,ma-1); });
             document.getElementById('tabela-dre-mensal').innerHTML = dO.length ? dO.map(m=>{ const d=ms[m], r=d.f-d.c-d.d, nm = new Date(m.split('/')[1],m.split('/')[0]-1).toLocaleString('pt-BR',{month:'short'}).toUpperCase(); return `<tr><td class="p-3 font-bold text-slate-700">${nm}/${m.split('/')[1]}</td><td class="p-3 text-right font-medium text-emerald-600">${formatBRL(d.f)}</td><td class="p-3 text-right text-slate-500">${formatBRL(d.c)}</td><td class="p-3 text-right text-rose-500">${formatBRL(d.d)}</td><td class="p-3 text-right font-black ${r>=0?'text-emerald-600':'text-rose-600'}">${formatBRL(r)}</td></tr>`; }).join('') : `<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum dado financeiro.</td></tr>`;
 
-            renderCarrinhoPDV(); renderCarrinhoRomaneio();
+            renderCarrinhoPDV(); renderCarrinhoRomaneio(); renderFilaEtiquetas();
         }
     </script>
 </body>
