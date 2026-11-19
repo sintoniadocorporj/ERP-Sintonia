@@ -357,9 +357,16 @@
                         <button type="button" onclick="abrirLeitorCamera()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl py-2 text-xs transition shadow-sm">
                             <i class="fa-solid fa-barcode mr-1"></i> Ler Etiqueta com a Câmara
                         </button>
-                        <div id="reader-container" class="hidden pt-2">
+                        <div id="reader-container" class="hidden pt-2 space-y-2">
                             <div id="reader" style="width: 100%; border-radius: 8px; overflow: hidden;"></div>
-                            <button type="button" onclick="fecharLeitorCamera()" class="w-full mt-2 bg-rose-600 text-white font-bold rounded-lg py-1 text-xs">Fechar Câmara</button>
+                            <div id="camera-zoom-box" class="hidden bg-white p-2 rounded-lg border border-indigo-100 flex items-center gap-2">
+                                <span class="text-[11px] font-bold text-indigo-700 whitespace-nowrap"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom:</span>
+                                <input type="range" id="camera-zoom-range" min="1" max="4" step="0.1" value="2" oninput="aplicarZoomCamera(this.value)" class="w-full accent-indigo-600">
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="btn-lanterna" onclick="alternarLanterna()" class="hidden w-1/2 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg py-1.5 text-xs"><i class="fa-solid fa-bolt mr-1"></i> Lanterna</button>
+                                <button type="button" onclick="fecharLeitorCamera()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg py-1.5 text-xs">Fechar Câmara</button>
+                            </div>
                         </div>
                     </div>
 
@@ -517,6 +524,7 @@
         let db = { fichas: [], produtos: [], ops: [], transferencias: [], vendas: [], contas: [] };
         let carrinhoPDV = []; let carrinhoRomaneio = []; let textoCompartilhamento = "";
         let html5QrCodeScanner = null;
+        let lanternaAtiva = false;
 
         window.addEventListener('DOMContentLoaded', () => { carregarBancoDeDados(); });
 
@@ -536,9 +544,10 @@
             document.getElementById('btn-bloqueio').classList.add('hidden'); document.getElementById('btn-desbloqueio').classList.remove('hidden'); switchTab('vendas');
         }
 
-        // ATUALIZADO: Leitor em HD com foco contínuo e motor nativo para etiquetas pequenas
+        // ATUALIZADO: Leitor com Zoom 2x automático, controle de Zoom e Lanterna
         function abrirLeitorCamera() {
             document.getElementById('reader-container').classList.remove('hidden');
+            lanternaAtiva = false;
             if (!html5QrCodeScanner) {
                 html5QrCodeScanner = new Html5Qrcode("reader", {
                     formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128 ],
@@ -549,7 +558,6 @@
                 { facingMode: "environment" },
                 {
                     fps: 15,
-                    qrbox: { width: 280, height: 120 },
                     videoConstraints: {
                         facingMode: "environment",
                         width: { ideal: 1280 },
@@ -563,9 +571,57 @@
                     fecharLeitorCamera();
                 },
                 (errorMessage) => {}
-            ).catch((err) => { alert("Erro ao aceder à câmara: " + err); });
+            ).then(() => {
+                try {
+                    const caps = html5QrCodeScanner.getRunningTrackCapabilities();
+                    if (caps && caps.zoom) {
+                        const zRange = document.getElementById('camera-zoom-range');
+                        zRange.min = caps.zoom.min || 1;
+                        zRange.max = Math.min(caps.zoom.max || 4, 5);
+                        zRange.step = caps.zoom.step || 0.1;
+                        const zoomInicial = Math.min(2, zRange.max);
+                        zRange.value = zoomInicial;
+                        document.getElementById('camera-zoom-box').classList.remove('hidden');
+                        aplicarZoomCamera(zoomInicial);
+                    }
+                    if (caps && caps.torch) {
+                        document.getElementById('btn-lanterna').classList.remove('hidden');
+                    }
+                } catch(e) {}
+            }).catch((err) => { alert("Erro ao aceder à câmara: " + err); });
         }
-        function fecharLeitorCamera() { if (html5QrCodeScanner) { html5QrCodeScanner.stop().then(() => { document.getElementById('reader-container').classList.add('hidden'); }).catch(err => { document.getElementById('reader-container').classList.add('hidden'); }); } else { document.getElementById('reader-container').classList.add('hidden'); } }
+
+        function aplicarZoomCamera(val) {
+            try {
+                if (html5QrCodeScanner) {
+                    html5QrCodeScanner.applyVideoConstraints({ advanced: [{ zoom: parseFloat(val) }] });
+                }
+            } catch(e) {}
+        }
+
+        function alternarLanterna() {
+            try {
+                if (html5QrCodeScanner) {
+                    lanternaAtiva = !lanternaAtiva;
+                    html5QrCodeScanner.applyVideoConstraints({ advanced: [{ torch: lanternaAtiva }] });
+                }
+            } catch(e) {}
+        }
+
+        function fecharLeitorCamera() {
+            document.getElementById('camera-zoom-box').classList.add('hidden');
+            document.getElementById('btn-lanterna').classList.add('hidden');
+            lanternaAtiva = false;
+            if (html5QrCodeScanner) {
+                html5QrCodeScanner.stop().then(() => {
+                    document.getElementById('reader-container').classList.add('hidden');
+                }).catch(() => {
+                    document.getElementById('reader-container').classList.add('hidden');
+                });
+            } else {
+                document.getElementById('reader-container').classList.add('hidden');
+            }
+        }
 
         async function dbInsert(t, obj) { try { await clienteSupabase.from(t).insert(Array.isArray(obj) ? obj : [obj]); } catch(e){console.error(e)} }
         async function dbUpdate(t, id, obj) { try { await clienteSupabase.from(t).update(obj).eq('id', id); } catch(e){console.error(e)} }
@@ -845,8 +901,10 @@
         async function excluirRomaneio(id) { const rom = db.transferencias.find(t=>t.id===id); if(rom && confirm("Estornar Romaneio?")){ let mods=[]; rom.itens.forEach(i=>{ const p=db.produtos.find(x=>x.id===i.prodId); if(p){ p.estConfeccao+=i.qtd; if(i.destinoItem==="Loja Tijuca") p.estTijuca=Math.max(0,p.estTijuca-i.qtd); else if(i.destinoItem==="Loja São Cristóvão") p.estSaoCristovao=Math.max(0,p.estSaoCristovao-i.qtd); else if(i.destinoItem==="Estoque Shopee") p.estShopee=Math.max(0,p.estShopee-i.qtd); if(!mods.includes(p)) mods.push(p); } }); db.transferencias=db.transferencias.filter(t=>t.id!==id); renderAll(); await dbDelete('transferencias', id); for(let mp of mods) await syncEstoque(mp); } }
 
         function handleBarcodeScan(e) { if(e.key==='Enter'){ e.preventDefault(); const v = e.target.value.trim().toUpperCase(); e.target.value=''; if(!v) return; document.getElementById('pdv-produto-busca').value = v; addItemPDV(); } }
-        function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value;
-            const p = db.produtos.find(x => `${x.nome} - ${x.cor} - ${x.tam}` === b.trim() || x.sku === b.trim()); 
+        
+        // ATUALIZADO: Reconhece nome, SKU antigo, ID completo e o novo código compacto de 8 dígitos
+        function addItemPDV() { const c = document.getElementById('pdv-canal').value, b = document.getElementById('pdv-produto-busca').value.trim();
+            const p = db.produtos.find(x => `${x.nome} - ${x.cor} - ${x.tam}` === b || x.sku === b || String(x.id) === b || String(x.id).slice(-8) === b); 
             const q = parseInt(document.getElementById('pdv-qtd').value)||1; 
             if(!p) return alert("Selecione um produto."); 
             let s=0; if(c.includes("Tijuca")||c==="Shopee"||c==="Nuvemshop") s=p.estTijuca; else if(c.includes("São Cristóvão")||c==="Shopee SC") s=p.estSaoCristovao; else if(c==="Estoque Shopee") s=p.estShopee; 
@@ -893,7 +951,7 @@
         function abrirModalQtdEtiquetas(id) { const p = db.produtos.find(x=>x.id===id); if(!p) return; document.getElementById('etiqueta-prod-id').value = p.id; document.getElementById('etiqueta-qtd').value = p.estConfeccao>0?p.estConfeccao:1; document.getElementById('modal-qtd-etiquetas').classList.remove('hidden'); document.getElementById('modal-qtd-etiquetas').classList.add('flex'); }
         function fecharModalQtdEtiquetas() { document.getElementById('modal-qtd-etiquetas').classList.add('hidden'); document.getElementById('modal-qtd-etiquetas').classList.remove('flex'); }
         
-        // ATUALIZADO: Barras mais altas e margem interna menor para melhor leitura no celular
+        // ATUALIZADO: +1mm para a direita, código compacto de 8 dígitos (barras mais grossas) e 13mm de altura útil
         function confirmarImpressaoEtiquetas() { 
             const id = parseInt(document.getElementById('etiqueta-prod-id').value);
             const qtd = parseInt(document.getElementById('etiqueta-qtd').value) || 1; 
@@ -901,9 +959,7 @@
             const p = db.produtos.find(x => x.id === id); 
             if(!p) return; 
 
-            let codigoValido = (p.sku && p.sku.trim() !== '') ? p.sku.trim() : '000000';
-            codigoValido = codigoValido.replace(/[^a-zA-Z0-9-]/g, '');
-            if(codigoValido === '') codigoValido = '000000';
+            let codigoValido = p.id ? String(p.id).slice(-8) : '00000000';
 
             let barcodeDataUrl = "";
             try {
@@ -912,9 +968,12 @@
                     format: "CODE128",
                     lineColor: "#000",
                     width: 2, 
-                    height: 55, 
+                    height: 80, 
                     displayValue: false, 
-                    margin: 4 
+                    marginTop: 0,
+                    marginBottom: 0,
+                    marginLeft: 10,
+                    marginRight: 10
                 });
                 barcodeDataUrl = canvas.toDataURL("image/png");
             } catch (e) { console.error("Erro JsBarcode:", e); }
@@ -927,18 +986,18 @@
                     body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
                     .page-container {
                         padding-top: 3.7mm; 
-                        padding-left: 2.7mm; 
+                        padding-left: 3.7mm; 
                         width: 210mm;
                         height: 297mm;
                         box-sizing: border-box;
                     }
                 } 
                 .pmc { display: grid; grid-template-columns: repeat(5, 38.2mm); grid-auto-rows: 21.2mm; column-gap: 2.5mm; row-gap: 0mm; justify-content: start; } 
-                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: start; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding-top: 1mm; padding-left: 1mm; padding-right: 1mm; padding-bottom: 0mm; text-align: center; } 
-                .e-n { font-size: 5pt; font-weight: 800; line-height: 1; margin-bottom: 1.5px; width: 100%; max-width: 36mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
-                .e-s { display: flex; justify-content: center; align-items: center; height: 11.5mm; width: 100%; max-width: 36mm; overflow: hidden;} 
-                .e-s img { height: 100%; max-width: 100%; object-fit: contain; } 
-                .e-t { font-size: 5pt; font-weight: 900; margin-top: 1.5px; line-height: 1; width: 100%; max-width: 36mm; overflow: hidden; white-space: nowrap;}
+                .etq { width: 38.2mm; height: 21.2mm; display: flex; flex-direction: column; justify-content: space-between; align-items: center; background: white; overflow: hidden; box-sizing: border-box; padding: 1mm 1.5mm; text-align: center; } 
+                .e-n { font-size: 5.5pt; font-weight: 800; line-height: 1; width: 100%; max-width: 35mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+                .e-s { display: flex; justify-content: center; align-items: center; height: 13mm; width: 100%; max-width: 35mm; overflow: hidden;} 
+                .e-s img { width: 100%; height: 100%; object-fit: fill; } 
+                .e-t { font-size: 5.5pt; font-weight: 900; line-height: 1; width: 100%; max-width: 35mm; overflow: hidden; white-space: nowrap;}
             </style>
             <div class="page-container">
                 <div class="pmc">`; 
