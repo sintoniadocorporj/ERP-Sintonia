@@ -259,7 +259,7 @@
             </div>
         </section>
 
-        <!-- 3. CATÁLOGO -->
+        <!-- 3. CATÁLOGO (COM FILTROS POR LOCAL, TAMANHO E SELEÇÃO EM LOTE P/ ETIQUETAS) -->
         <section id="tab-produtos" class="tab-content space-y-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div><h2 class="text-2xl font-bold text-slate-900">Catálogo e Saldo de Estoque</h2></div>
@@ -271,9 +271,9 @@
                     <button onclick="document.getElementById('file-import-csv').click()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl px-4 py-2 text-sm transition shadow-sm flex items-center gap-2 whitespace-nowrap admin-only" title="Importar Planilha do Excel">
                         <i class="fa-solid fa-file-excel"></i> Importar CSV Estoque
                     </button>
-                    <input type="text" id="filtro-busca-catalogo" onkeyup="filtrarCatalogo()" placeholder="Buscar peça por nome, cor ou SKU..." class="border border-slate-300 rounded-xl px-3 py-2 text-sm w-full md:w-64 shadow-sm">
                 </div>
             </div>
+
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 admin-only">
                 <h3 class="font-semibold text-slate-800 mb-4" id="titulo-form-catalogo">Cadastrar Variações Manualmente</h3>
                 <form onsubmit="addProduto(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3">
@@ -286,9 +286,67 @@
                     <button type="submit" class="md:col-span-7 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl px-4 py-2.5 text-sm transition">+ Registrar Grade no Sistema</button>
                 </form>
             </div>
+
+            <!-- NOVA BARRA DE FILTROS INTELIGENTES E SELEÇÃO EM LOTE -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1"><i class="fa-solid fa-filter mr-1"></i> Estoque em:</span>
+                    <button type="button" onclick="setFiltroLocalEstoque('todos')" id="btn-local-todos" class="btn-filtro-local px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-900 text-white">Todos</button>
+                    <button type="button" onclick="setFiltroLocalEstoque('com_estoque')" id="btn-local-com_estoque" class="btn-filtro-local px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-600 hover:bg-slate-200">Com Saldo</button>
+                    <button type="button" onclick="setFiltroLocalEstoque('fabrica')" id="btn-local-fabrica" class="btn-filtro-local admin-only px-3 py-1.5 rounded-xl text-xs font-bold transition bg-amber-50 text-amber-800 hover:bg-amber-100">Fábrica</button>
+                    <button type="button" onclick="setFiltroLocalEstoque('tijuca')" id="btn-local-tijuca" class="btn-filtro-local px-3 py-1.5 rounded-xl text-xs font-bold transition bg-blue-50 text-blue-800 hover:bg-blue-100">Tijuca</button>
+                    <button type="button" onclick="setFiltroLocalEstoque('sc')" id="btn-local-sc" class="btn-filtro-local px-3 py-1.5 rounded-xl text-xs font-bold transition bg-purple-50 text-purple-800 hover:bg-purple-100">São Cristóvão</button>
+                    <button type="button" onclick="setFiltroLocalEstoque('shopee')" id="btn-local-shopee" class="btn-filtro-local px-3 py-1.5 rounded-xl text-xs font-bold transition bg-orange-50 text-orange-800 hover:bg-orange-100">Shopee</button>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-3 top-1/2 -translate-y-1/2"></i>
+                        <input type="text" id="filtro-busca-catalogo" oninput="filtrarCatalogo()" placeholder="Buscar por modelo, cor, tecido ou SKU..." class="w-full border border-slate-300 rounded-xl pl-8 pr-3 py-2 text-sm outline-none focus:border-pink-500">
+                    </div>
+                    <select id="filtro-tam-catalogo" onchange="filtrarCatalogo()" class="border border-slate-300 rounded-xl px-3 py-2 text-sm font-semibold bg-white text-slate-700 outline-none">
+                        <option value="todos">Tamanho: Todos</option>
+                        <option value="P">Tamanho: P</option>
+                        <option value="M">Tamanho: M</option>
+                        <option value="G">Tamanho: G</option>
+                        <option value="GG">Tamanho: GG</option>
+                        <option value="ÚNICO">Tamanho: Único</option>
+                    </select>
+                    <span id="contador-catalogo-filtrado" class="text-xs font-semibold text-slate-500 whitespace-nowrap self-center">0 itens</span>
+                </div>
+
+                <!-- BARRA DE AÇÃO EM LOTE (APARECE AO MARCAR PRODUTOS) -->
+                <div id="barra-selecao-etiquetas" class="hidden bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+                    <div class="text-xs text-indigo-900">
+                        <span class="font-bold" id="qtd-selecionados-catalogo">0 produto(s) selecionado(s)</span>
+                        <span class="text-indigo-700 ml-1" id="info-origem-qtd-lote"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="limparSelecaoCatalogo()" class="px-3 py-1.5 rounded-lg border border-indigo-200 bg-white text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition">Desmarcar</button>
+                        <button type="button" onclick="enviarSelecionadosParaFila()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-sm"><i class="fa-solid fa-barcode mr-1"></i> Enviar p/ Fila de Etiquetas</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
                 <table class="w-full text-left border-collapse text-sm">
-                    <thead><tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-[10px] uppercase tracking-wider"><th class="p-3">Peça / SKU</th><th class="p-3">Cor / Tam</th><th class="p-3 th-custo" id="th-preco-dinamico">Preço</th><th class="p-3 th-lucro">Lucro R$</th><th class="p-3 text-center bg-amber-50/60 text-amber-800 th-fabrica">Fábrica</th><th class="p-3 text-center bg-blue-50/60 text-blue-800">Tijuca</th><th class="p-3 text-center bg-purple-50/60 text-purple-800">S. Crist.</th><th class="p-3 text-center bg-orange-50/60 text-orange-800">Shopee</th><th class="p-3 text-center font-bold">Total</th><th class="p-3 text-right">Ações</th></tr></thead>
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-[10px] uppercase tracking-wider">
+                            <th class="p-3 w-10 text-center">
+                                <input type="checkbox" id="check-todos-catalogo" onchange="toggleSelecionarTodosCatalogo(this.checked)" class="w-4 h-4 accent-indigo-600 cursor-pointer" title="Selecionar todos os itens visíveis no filtro">
+                            </th>
+                            <th class="p-3">Peça / SKU</th>
+                            <th class="p-3">Cor / Tam</th>
+                            <th class="p-3 th-custo" id="th-preco-dinamico">Preço</th>
+                            <th class="p-3 th-lucro">Lucro R$</th>
+                            <th class="p-3 text-center bg-amber-50/60 text-amber-800 th-fabrica">Fábrica</th>
+                            <th class="p-3 text-center bg-blue-50/60 text-blue-800">Tijuca</th>
+                            <th class="p-3 text-center bg-purple-50/60 text-purple-800">S. Crist.</th>
+                            <th class="p-3 text-center bg-orange-50/60 text-orange-800">Shopee</th>
+                            <th class="p-3 text-center font-bold">Total</th>
+                            <th class="p-3 text-right">Ações</th>
+                        </tr>
+                    </thead>
                     <tbody id="tabela-produtos" class="divide-y divide-slate-200"></tbody>
                 </table>
             </div>
@@ -404,7 +462,6 @@
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div><label class="text-xs font-semibold text-slate-500">Desconto (%)</label><input type="number" step="0.1" min="0" max="100" id="pdv-desconto" value="0" oninput="renderCarrinhoPDV()" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white font-bold text-rose-600 outline-none"></div>
-                            <!-- PAGAMENTO ATUALIZADO: Inicia em branco para seleção obrigatória -->
                             <div>
                                 <label class="text-xs font-semibold text-slate-500">Pagamento</label>
                                 <select id="pdv-pgto" class="w-full mt-1 border border-slate-300 rounded-xl px-3 py-1.5 text-sm bg-white outline-none">
@@ -534,7 +591,7 @@
         </div>
     </div>
 
-    <!-- MODAL FILA DE IMPRESSÃO DE ETIQUETAS -->
+    <!-- MODAL FILA DE IMPRESSÃO DE ETIQUETAS (COM QTD EDITÁVEL) -->
     <div id="modal-fila-etiquetas" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center p-4 z-[60] no-print">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
             <div class="flex items-center justify-between">
@@ -583,6 +640,8 @@
         const SENHA_ADMIN = 'sintonia2026';
         let db = { fichas: [], produtos: [], ops: [], transferencias: [], vendas: [], contas: [] };
         let carrinhoPDV = []; let carrinhoRomaneio = []; let filaEtiquetas = []; let textoCompartilhamento = "";
+        let filtroLocalEstoque = 'todos';
+        let selecionadosCatalogo = new Set();
         let html5QrCodeScanner = null;
         let lanternaAtiva = false;
 
@@ -605,6 +664,7 @@
             window.perfilAtual = 'loja'; document.getElementById('usuario-logado').innerHTML = `<i class="fa-solid fa-lock text-[10px]"></i> PDV Bloqueado`;
             document.getElementById('btn-bloqueio').classList.add('hidden'); document.getElementById('btn-desbloqueio').classList.remove('hidden');
             const thPreco = document.getElementById('th-preco-dinamico'); if(thPreco) thPreco.innerText = 'Preço';
+            if(filtroLocalEstoque === 'fabrica') setFiltroLocalEstoque('todos');
             switchTab('vendas');
         }
 
@@ -939,8 +999,178 @@
         function abrirModalEditarProd(id) { const p = db.produtos.find(x=>x.id===id); if(p){ document.getElementById('edit-prod-id').value = p.id; document.getElementById('edit-prod-nome').value = p.nome; document.getElementById('edit-prod-cor').value = p.cor; document.getElementById('edit-prod-tam').value = p.tam; document.getElementById('edit-prod-custo').value = p.custo; document.getElementById('edit-prod-preco').value = p.preco; document.getElementById('edit-prod-fab').value = p.estConfeccao; document.getElementById('edit-prod-tij').value = p.estTijuca; document.getElementById('edit-prod-sc').value = p.estSaoCristovao; document.getElementById('edit-prod-shp').value = p.estShopee; document.getElementById('modal-editar-prod').classList.remove('hidden'); document.getElementById('modal-editar-prod').classList.add('flex'); } }
         function fecharModalEditarProd() { document.getElementById('modal-editar-prod').classList.add('hidden'); document.getElementById('modal-editar-prod').classList.remove('flex'); }
         async function salvarEdicaoProd() { const id = parseInt(document.getElementById('edit-prod-id').value); const p = db.produtos.find(x=>x.id===id); if(p){ p.nome = document.getElementById('edit-prod-nome').value.trim(); p.cor = document.getElementById('edit-prod-cor').value.trim(); p.tam = document.getElementById('edit-prod-tam').value.trim(); p.custo = parseFloat(document.getElementById('edit-prod-custo').value)||0; p.preco = parseFloat(document.getElementById('edit-prod-preco').value)||0; p.sku = gerarSKU(p.nome, p.tecido, p.cor, p.tam); p.estConfeccao = parseInt(document.getElementById('edit-prod-fab').value)||0; p.estTijuca = parseInt(document.getElementById('edit-prod-tij').value)||0; p.estSaoCristovao = parseInt(document.getElementById('edit-prod-sc').value)||0; p.estShopee = parseInt(document.getElementById('edit-prod-shp').value)||0; fecharModalEditarProd(); renderAll(); await dbUpdate('produtos', id, { nome: p.nome, cor: p.cor, tam: p.tam, custo: p.custo, preco: p.preco, sku: p.sku, estConfeccao: p.estConfeccao, estTijuca: p.estTijuca, estSaoCristovao: p.estSaoCristovao, estShopee: p.estShopee }); } }
-        async function excluirProduto(id) { if(confirm("Excluir produto?")){ db.produtos = db.produtos.filter(p=>p.id!==id); renderAll(); await dbDelete('produtos', id); } }
-        function filtrarCatalogo() { const trm = document.getElementById('filtro-busca-catalogo').value.toLowerCase(); document.querySelectorAll('#tabela-produtos tr').forEach(tr => tr.style.display = tr.innerText.toLowerCase().includes(trm) ? '' : 'none'); }
+        async function excluirProduto(id) { if(confirm("Excluir produto?")){ selecionadosCatalogo.delete(id); db.produtos = db.produtos.filter(p=>p.id!==id); renderAll(); await dbDelete('produtos', id); } }
+
+        // NOVOS FILTROS INTELIGENTES E SELEÇÃO EM LOTE DO CATÁLOGO
+        function setFiltroLocalEstoque(local) {
+            filtroLocalEstoque = local;
+            const estilosBase = {
+                todos: 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                com_estoque: 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                fabrica: 'bg-amber-50 text-amber-800 hover:bg-amber-100',
+                tijuca: 'bg-blue-50 text-blue-800 hover:bg-blue-100',
+                sc: 'bg-purple-50 text-purple-800 hover:bg-purple-100',
+                shopee: 'bg-orange-50 text-orange-800 hover:bg-orange-100'
+            };
+            const estilosAtivo = {
+                todos: 'bg-slate-900 text-white shadow-sm',
+                com_estoque: 'bg-emerald-600 text-white shadow-sm',
+                fabrica: 'bg-amber-600 text-white shadow-sm',
+                tijuca: 'bg-blue-600 text-white shadow-sm',
+                sc: 'bg-purple-600 text-white shadow-sm',
+                shopee: 'bg-orange-600 text-white shadow-sm'
+            };
+            Object.keys(estilosBase).forEach(k => {
+                const btn = document.getElementById('btn-local-' + k);
+                if (!btn) return;
+                const adminCls = k === 'fabrica' ? ' admin-only' : '';
+                btn.className = `btn-filtro-local${adminCls} px-3 py-1.5 rounded-xl text-xs font-bold transition ${k === local ? estilosAtivo[k] : estilosBase[k]}`;
+            });
+            renderTabelaProdutos();
+        }
+
+        function getProdutosFiltradosCatalogo() {
+            const trm = (document.getElementById('filtro-busca-catalogo')?.value || '').toLowerCase().trim();
+            const tam = document.getElementById('filtro-tam-catalogo')?.value || 'todos';
+
+            return db.produtos.filter(p => {
+                if (trm) {
+                    const texto = `${p.nome || ''} ${p.cor || ''} ${p.tam || ''} ${p.tecido || ''} ${p.sku || ''}`.toLowerCase();
+                    if (!texto.includes(trm)) return false;
+                }
+                if (tam !== 'todos' && (p.tam || '').toUpperCase() !== tam) return false;
+
+                const fab = p.estConfeccao || 0;
+                const tij = p.estTijuca || 0;
+                const sc = p.estSaoCristovao || 0;
+                const shp = p.estShopee || 0;
+
+                if (filtroLocalEstoque === 'com_estoque') return (fab + tij + sc + shp) > 0;
+                if (filtroLocalEstoque === 'fabrica') return fab > 0;
+                if (filtroLocalEstoque === 'tijuca') return tij > 0;
+                if (filtroLocalEstoque === 'sc') return sc > 0;
+                if (filtroLocalEstoque === 'shopee') return shp > 0;
+                return true;
+            });
+        }
+
+        function getQtdSugeridaEtiqueta(p) {
+            if (filtroLocalEstoque === 'fabrica') return (p.estConfeccao || 0) > 0 ? p.estConfeccao : 1;
+            if (filtroLocalEstoque === 'tijuca') return (p.estTijuca || 0) > 0 ? p.estTijuca : 1;
+            if (filtroLocalEstoque === 'sc') return (p.estSaoCristovao || 0) > 0 ? p.estSaoCristovao : 1;
+            if (filtroLocalEstoque === 'shopee') return (p.estShopee || 0) > 0 ? p.estShopee : 1;
+            if ((p.estConfeccao || 0) > 0) return p.estConfeccao;
+            const total = (p.estConfeccao || 0) + (p.estTijuca || 0) + (p.estSaoCristovao || 0) + (p.estShopee || 0);
+            return total > 0 ? total : 1;
+        }
+
+        function filtrarCatalogo() { renderTabelaProdutos(); }
+
+        function toggleSelecaoProd(id, marcado) {
+            if (marcado) selecionadosCatalogo.add(id);
+            else selecionadosCatalogo.delete(id);
+            atualizarBarraSelecaoCatalogo();
+        }
+
+        function toggleSelecionarTodosCatalogo(marcado) {
+            const filtrados = getProdutosFiltradosCatalogo();
+            filtrados.forEach(p => {
+                if (marcado) selecionadosCatalogo.add(p.id);
+                else selecionadosCatalogo.delete(p.id);
+            });
+            renderTabelaProdutos();
+        }
+
+        function limparSelecaoCatalogo() {
+            selecionadosCatalogo.clear();
+            renderTabelaProdutos();
+        }
+
+        function atualizarBarraSelecaoCatalogo() {
+            const barra = document.getElementById('barra-selecao-etiquetas');
+            if (!barra) return;
+            const qtd = selecionadosCatalogo.size;
+            if (qtd > 0) {
+                barra.classList.remove('hidden');
+                document.getElementById('qtd-selecionados-catalogo').innerText = `${qtd} produto(s) selecionado(s)`;
+                const nomesLocal = {
+                    todos: '(puxará saldo da Fábrica/Total)',
+                    com_estoque: '(puxará saldo da Fábrica/Total)',
+                    fabrica: '(puxará saldo da Fábrica)',
+                    tijuca: '(puxará saldo da Tijuca)',
+                    sc: '(puxará saldo de São Cristóvão)',
+                    shopee: '(puxará saldo da Shopee)'
+                };
+                document.getElementById('info-origem-qtd-lote').innerText = nomesLocal[filtroLocalEstoque] || '';
+            } else {
+                barra.classList.add('hidden');
+            }
+            const filtrados = getProdutosFiltradosCatalogo();
+            const checkAll = document.getElementById('check-todos-catalogo');
+            if (checkAll) {
+                checkAll.checked = filtrados.length > 0 && filtrados.every(p => selecionadosCatalogo.has(p.id));
+            }
+        }
+
+        function enviarSelecionadosParaFila() {
+            if (selecionadosCatalogo.size === 0) return;
+            selecionadosCatalogo.forEach(id => {
+                const p = db.produtos.find(x => x.id === id);
+                if (!p) return;
+                const qtd = getQtdSugeridaEtiqueta(p);
+                const existente = filaEtiquetas.find(item => item.prodId === p.id);
+                if (existente) existente.qtd += qtd;
+                else filaEtiquetas.push({ prodId: p.id, qtd: qtd });
+            });
+            selecionadosCatalogo.clear();
+            renderTabelaProdutos();
+            renderFilaEtiquetas();
+            abrirModalFilaEtiquetas();
+        }
+
+        function renderTabelaProdutos() {
+            const filtrados = getProdutosFiltradosCatalogo();
+            const totalPecasFiltro = filtrados.reduce((acc, p) => {
+                if (filtroLocalEstoque === 'fabrica') return acc + (p.estConfeccao || 0);
+                if (filtroLocalEstoque === 'tijuca') return acc + (p.estTijuca || 0);
+                if (filtroLocalEstoque === 'sc') return acc + (p.estSaoCristovao || 0);
+                if (filtroLocalEstoque === 'shopee') return acc + (p.estShopee || 0);
+                return acc + (p.estConfeccao || 0) + (p.estTijuca || 0) + (p.estSaoCristovao || 0) + (p.estShopee || 0);
+            }, 0);
+
+            const contador = document.getElementById('contador-catalogo-filtrado');
+            if (contador) contador.innerText = `${filtrados.length} item(ns) • ${totalPecasFiltro} peça(s)`;
+
+            document.getElementById('tabela-produtos').innerHTML = filtrados.length ? filtrados.map(p => {
+                const cF = p.estConfeccao === 0 ? 'text-rose-600 font-black text-lg' : 'text-amber-900 font-bold';
+                const cT = p.estTijuca === 0 ? 'text-rose-600 font-black text-lg' : 'text-blue-900 font-bold';
+                const cS = p.estSaoCristovao === 0 ? 'text-rose-600 font-black text-lg' : 'text-purple-900 font-bold';
+                const cSh = (p.estShopee || 0) === 0 ? 'text-rose-600 font-black text-lg' : 'text-orange-900 font-bold';
+                const marcado = selecionadosCatalogo.has(p.id);
+
+                return `<tr class="hover:bg-slate-50 border-b border-slate-100 ${marcado ? 'bg-indigo-50/40' : ''}">
+                    <td class="p-3 text-center">
+                        <input type="checkbox" ${marcado ? 'checked' : ''} onchange="toggleSelecaoProd(${p.id}, this.checked)" class="w-4 h-4 accent-indigo-600 cursor-pointer">
+                    </td>
+                    <td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td>
+                    <td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td>
+                    <td class="p-3"><span class="text-slate-500 font-medium block admin-only">${formatBRL(p.custo)}</span><span class="font-bold">${formatBRL(p.preco)}</span></td>
+                    <td class="p-3 font-bold text-emerald-600 th-lucro">${formatBRL(p.preco - p.custo)}</td>
+                    <td class="p-3 text-center bg-amber-50/30 ${cF} th-fabrica">${p.estConfeccao}</td>
+                    <td class="p-3 text-center bg-blue-50/30 ${cT}">${p.estTijuca}</td>
+                    <td class="p-3 text-center bg-purple-50/30 ${cS}">${p.estSaoCristovao}</td>
+                    <td class="p-3 text-center bg-orange-50/30 ${cSh}">${p.estShopee || 0}</td>
+                    <td class="p-3 text-center font-bold">${p.estConfeccao + p.estTijuca + p.estSaoCristovao + (p.estShopee || 0)}</td>
+                    <td class="p-3 text-right flex flex-col gap-2">
+                        <button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500 admin-only" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500" title="Etiquetas"><i class="fa-solid fa-barcode"></i></button>
+                        <button onclick="excluirProduto(${p.id})" class="text-slate-300 admin-only" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            }).join('') : `<tr><td colspan="11" class="p-8 text-center text-sm text-slate-400">Nenhum produto encontrado para este filtro.</td></tr>`;
+
+            atualizarBarraSelecaoCatalogo();
+        }
 
         async function addOP(e) { 
             e.preventDefault(); 
@@ -1016,7 +1246,7 @@
             if(!p) return;
             document.getElementById('etiqueta-prod-id').value = p.id;
             document.getElementById('etiqueta-prod-resumo').innerText = `${p.nome} (${p.cor} - ${p.tam})`;
-            document.getElementById('etiqueta-qtd').value = p.estConfeccao > 0 ? p.estConfeccao : 1;
+            document.getElementById('etiqueta-qtd').value = getQtdSugeridaEtiqueta(p);
             document.getElementById('modal-qtd-etiquetas').classList.remove('hidden');
             document.getElementById('modal-qtd-etiquetas').classList.add('flex');
         }
@@ -1043,6 +1273,13 @@
             document.getElementById('modal-fila-etiquetas').classList.add('hidden');
             document.getElementById('modal-fila-etiquetas').classList.remove('flex');
         }
+        function alterarQtdFilaEtiquetas(idx, novaQtd) {
+            const q = Math.max(1, parseInt(novaQtd) || 1);
+            if (filaEtiquetas[idx]) {
+                filaEtiquetas[idx].qtd = q;
+                renderFilaEtiquetas();
+            }
+        }
         function removerItemFilaEtiquetas(idx) {
             filaEtiquetas.splice(idx, 1);
             renderFilaEtiquetas();
@@ -1067,8 +1304,12 @@
                 tbody.innerHTML = filaEtiquetas.length ? filaEtiquetas.map((item, idx) => {
                     const p = db.produtos.find(x => x.id === item.prodId);
                     if(!p) return '';
-                    return `<tr><td class="p-2.5"><span class="font-semibold block text-xs">${p.nome}</span><span class="text-[11px] text-slate-500">${p.cor} - ${p.tam}</span></td><td class="p-2.5 text-center font-bold">${item.qtd}</td><td class="p-2.5 text-right"><button onclick="removerItemFilaEtiquetas(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-                }).join('') : `<tr><td colspan="3" class="p-4 text-center text-xs text-slate-400">Fila vazia. Clique no ícone de código de barras de qualquer produto no catálogo para adicionar.</td></tr>`;
+                    return `<tr>
+                        <td class="p-2.5"><span class="font-semibold block text-xs">${p.nome}</span><span class="text-[11px] text-slate-500">${p.cor} - ${p.tam}</span></td>
+                        <td class="p-2.5 text-center"><input type="number" min="1" value="${item.qtd}" onchange="alterarQtdFilaEtiquetas(${idx}, this.value)" class="w-16 border border-slate-300 rounded-lg px-2 py-1 text-center font-bold text-xs outline-none focus:border-indigo-500"></td>
+                        <td class="p-2.5 text-right"><button onclick="removerItemFilaEtiquetas(${idx})" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>`;
+                }).join('') : `<tr><td colspan="3" class="p-4 text-center text-xs text-slate-400">Fila vazia. Marque os produtos no catálogo ou clique no ícone de código de barras para adicionar.</td></tr>`;
             }
         }
 
@@ -1278,14 +1519,7 @@
 
             document.getElementById('tabela-fichas').innerHTML = (db.fichas||[]).map(f=>`<tr class="hover:bg-slate-50"><td class="p-4 text-xs">${f.data}</td><td class="p-4 font-bold">${f.nome}</td><td class="p-4 text-xs">${f.tecido}</td><td class="p-4 font-bold text-slate-900">${formatBRL(f.custoTotal)}</td><td class="p-4 font-bold text-emerald-600">${formatBRL(f.precoVenda)}</td><td class="p-4 text-xs badge bg-slate-100">${(f.precoVenda>0?((f.precoVenda-f.custoTotal)/f.precoVenda*100):0).toFixed(1)}%</td><td class="p-4 text-right space-x-2"><button onclick="abrirModalEditarFicha(${f.id})" class="text-indigo-500 mr-2" title="Editar Ficha"><i class="fa-solid fa-pen"></i></button><button onclick="gerarProdutoDaFicha(${f.id})" class="badge bg-pink-100 text-pink-700">Gerar ➡</button><button onclick="excluirFicha(${f.id})" class="text-slate-400"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('');
             
-            document.getElementById('tabela-produtos').innerHTML = db.produtos.map(p=>{
-                const cF = p.estConfeccao === 0 ? 'text-rose-600 font-black text-lg' : 'text-amber-900 font-bold';
-                const cT = p.estTijuca === 0 ? 'text-rose-600 font-black text-lg' : 'text-blue-900 font-bold';
-                const cS = p.estSaoCristovao === 0 ? 'text-rose-600 font-black text-lg' : 'text-purple-900 font-bold';
-                const cSh = p.estShopee === 0 ? 'text-rose-600 font-black text-lg' : 'text-orange-900 font-bold';
-                
-                return `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3"><span class="font-semibold block">${p.nome}</span><span class="text-[10px] text-slate-400">${p.sku}</span></td><td class="p-3">${p.cor} <span class="badge bg-slate-100">${p.tam}</span></td><td class="p-3"><span class="text-slate-500 font-medium block admin-only">${formatBRL(p.custo)}</span><span class="font-bold">${formatBRL(p.preco)}</span></td><td class="p-3 font-bold text-emerald-600 th-lucro">${formatBRL(p.preco-p.custo)}</td><td class="p-3 text-center bg-amber-50/30 ${cF} th-fabrica">${p.estConfeccao}</td><td class="p-3 text-center bg-blue-50/30 ${cT}">${p.estTijuca}</td><td class="p-3 text-center bg-purple-50/30 ${cS}">${p.estSaoCristovao}</td><td class="p-3 text-center bg-orange-50/30 ${cSh}">${p.estShopee||0}</td><td class="p-3 text-center font-bold">${p.estConfeccao+p.estTijuca+p.estSaoCristovao+(p.estShopee||0)}</td><td class="p-3 text-right flex flex-col gap-2"><button onclick="abrirModalEditarProd(${p.id})" class="text-indigo-500 admin-only"><i class="fa-solid fa-pen"></i></button><button onclick="abrirModalQtdEtiquetas(${p.id})" class="text-slate-500"><i class="fa-solid fa-barcode"></i></button><button onclick="excluirProduto(${p.id})" class="text-slate-300 admin-only"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-            }).join('');
+            renderTabelaProdutos();
             
             document.getElementById('tabela-ops').innerHTML = db.ops.map(o=>{ const p = db.produtos.find(x=>x.id===o.prodId); return `<tr><td class="p-4 font-bold text-xs">#OP-${o.id}</td><td class="p-4 text-xs">${o.data}</td><td class="p-4">${p ? `<span class="font-semibold block">${p.nome}</span><span class="text-xs text-slate-500">${p.cor} <span class="badge bg-slate-100 text-slate-700 ml-1">${p.tam}</span></span>` : '<span class="text-slate-400">Removido</span>'}</td><td class="p-4 font-bold">${o.qtd}</td><td class="p-4 text-xs">${o.obs}</td><td class="p-4"><span class="badge bg-slate-100">${o.status}</span></td><td class="p-4 text-right">${o.status!=="Finalizado"?`<button onclick="avancarOP(${o.id})" class="badge bg-slate-800 text-white">Avançar ➡</button>`:`<span class="badge bg-emerald-100 text-emerald-800">No Estoque</span>`} <button onclick="excluirOP(${o.id})" class="text-rose-400 ml-2"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('');
             
